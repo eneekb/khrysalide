@@ -1,1 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Connexion Google Sheets</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #357ae8;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        #result {
+            margin-top: 20px;
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Connexion Google Sheets</h1>
+        
+        <button id="authorizeButton" onclick="handleAuthClick()">Se connecter avec Google</button>
+        <button id="signoutButton" onclick="handleSignoutClick()" style="display:none;">Se déconnecter</button>
+        
+        <div id="status" class="status"></div>
+        
+        <button id="readButton" onclick="readSheet()" style="display:none;">Lire la cellule A1</button>
+        <button id="writeButton" onclick="writeSheet()" style="display:none;">Écrire dans A1</button>
+        
+        <div id="result"></div>
+    </div>
 
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+    <script>
+        // Configuration
+        const CLIENT_ID = '448205179983-4dsjnf2st3n87rpuemvdgl5ufledov42.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyBFw0Qpm2-HB_TT_V78jEJdaJEPC5rEVRw'; // Clé API publique pour tests
+        const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+        const SPREADSHEET_ID = '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        function updateStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + (isError ? 'error' : 'success');
+        }
+
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: [DISCOVERY_DOC],
+            });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // Défini plus tard
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                document.getElementById('authorizeButton').disabled = false;
+                updateStatus('Prêt à se connecter');
+            }
+        }
+
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    updateStatus('Erreur d\'authentification: ' + resp.error, true);
+                    return;
+                }
+                updateStatus('Connecté avec succès!');
+                document.getElementById('signoutButton').style.display = 'inline-block';
+                document.getElementById('authorizeButton').style.display = 'none';
+                document.getElementById('readButton').style.display = 'inline-block';
+                document.getElementById('writeButton').style.display = 'inline-block';
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                tokenClient.requestAccessToken({prompt: ''});
+            }
+        }
+
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                document.getElementById('authorizeButton').style.display = 'inline-block';
+                document.getElementById('signoutButton').style.display = 'none';
+                document.getElementById('readButton').style.display = 'none';
+                document.getElementById('writeButton').style.display = 'none';
+                document.getElementById('result').textContent = '';
+                updateStatus('Déconnecté');
+            }
+        }
+
+        async function readSheet() {
+            try {
+                updateStatus('Lecture en cours...');
+                const response = await gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'A1:E5', // Lit les 5 premières lignes et colonnes
+                });
+                
+                const result = response.result;
+                if (result.values && result.values.length > 0) {
+                    document.getElementById('result').textContent = 
+                        'Données lues:\n' + JSON.stringify(result.values, null, 2);
+                    updateStatus('Lecture réussie!');
+                } else {
+                    document.getElementById('result').textContent = 'Aucune donnée trouvée';
+                    updateStatus('Le sheet est vide', true);
+                }
+            } catch (err) {
+                updateStatus('Erreur: ' + err.message, true);
+                document.getElementById('result').textContent = 'Erreur:\n' + JSON.stringify(err, null, 2);
+            }
+        }
+
+        async function writeSheet() {
+            try {
+                updateStatus('Écriture en cours...');
+                const values = [
+                    ['Test écriture', new Date().toLocaleString('fr-FR')]
+                ];
+                
+                const response = await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: 'A1:B1',
+                    valueInputOption: 'RAW',
+                    resource: {
+                        values: values
+                    }
+                });
+                
+                document.getElementById('result').textContent = 
+                    'Écriture réussie!\nCellule A1: "Test écriture"\nCellule B1: ' + values[0][1];
+                updateStatus('Écriture réussie!');
+            } catch (err) {
+                updateStatus('Erreur: ' + err.message, true);
+                document.getElementById('result').textContent = 'Erreur:\n' + JSON.stringify(err, null, 2);
+            }
+        }
+    </script>
+</body>
+</html>
