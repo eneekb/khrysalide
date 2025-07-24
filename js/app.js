@@ -1,13 +1,13 @@
-/**
+/**/**
  * app.js - Point d'entrée et coordinateur principal de Khrysalide
  * Initialise et coordonne tous les modules
- * Version: 1.0.2
+ * Version: 1.0.3
  */
 
 // Configuration globale de l'application
 const APP_CONFIG = {
   name: 'Khrysalide',
-  version: '1.0.2',
+  version: '1.0.3',
   debug: true, // Mode debug pour le développement
   api: {
     spreadsheetId: '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY',
@@ -147,15 +147,9 @@ class KhrysalideApp {
    * Cache l'écran de démarrage
    */
   hideSplashScreen() {
-    const splash = document.getElementById('splash-screen');
-    if (splash) {
-      setTimeout(() => {
-        splash.classList.add('hide');
-        setTimeout(() => {
-          splash.style.display = 'none';
-        }, 500);
-      }, 100);
-    }
+    // L'écran de démarrage est géré par index.html
+    // On ne fait rien ici pour éviter les conflits
+    this.log('✨ Splash screen géré par index.html');
   }
 
   /**
