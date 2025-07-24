@@ -1,1 +1,173 @@
-
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khrysalide - Suivi calorique</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Application de suivi calorique et rééquilibrage alimentaire">
+    <meta name="theme-color" content="#52D1B3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Khrysalide">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Écran de démarrage -->
+    <div id="splash-screen">
+        <!-- Bulles décoratives -->
+        <div class="bubble bubble1"></div>
+        <div class="bubble bubble2"></div>
+        <div class="bubble bubble3"></div>
+        
+        <!-- Logo -->
+        <div class="logo-container">
+            <div class="logo">
+                <img src="logo.png" alt="Khrysalide Logo" />
+            </div>
+        </div>
+        
+        <!-- Titre -->
+        <h1 class="app-title">Khrysalide</h1>
+        
+        <!-- Version -->
+        <div class="version">v1.0.1</div>
+        
+        <!-- Section de chargement -->
+        <div class="loading-section">
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="loading-text" id="loading-text">Initialisation...</div>
+        </div>
+    </div>
+    
+    <!-- Container principal de l'app -->
+    <div id="app">
+        <!-- Le contenu de l'app sera injecté ici par JavaScript -->
+    </div>
+    
+    <script>
+        // Phrases de chargement amusantes
+        const loadingPhrases = [
+            "Pesée des calories en cours...",
+            "Mixage des nutriments...",
+            "Préchauffage de votre motivation...",
+            "Épluchage des données...",
+            "Assaisonnement de l'interface...",
+            "Cuisson de vos statistiques à feu doux...",
+            "Découpe des portions en pixels...",
+            "Fouettage énergique des graphiques...",
+            "Marinade des recettes dans la base...",
+            "Flambage spectaculaire du dashboard...",
+            "Dressage artistique des boutons...",
+            "Réduction de la sauce calorique...",
+            "Émulsion parfaite des couleurs...",
+            "Caramélisation de l'expérience utilisateur...",
+            "Infusion des bonnes ondes...",
+            "Pochage délicat de vos objectifs...",
+            "Mijotage des algorithmes...",
+            "Dégustation des premières lignes de code...",
+            "Blanchiment des légumes virtuels...",
+            "Torréfaction des grains de données...",
+            "Pétrissage de la pâte à interface...",
+            "Fermentation des fonctionnalités...",
+            "Glacage des graphiques...",
+            "Tempérage du chocolat numérique...",
+            "Clarification du bouillon de code...",
+            "Macération des fruits statistiques...",
+            "Dégraissage de l'application...",
+            "Monter les blancs en neige digitale...",
+            "Faire revenir les oignons de connexion...",
+            "Saupoudrage de magie utilisateur...",
+            "Nappage de sauce hollandaise 2.0...",
+            "Brunoise de pixels bio...",
+            "Julienne de barres de progression...",
+            "Chiffonnade de feuilles de style...",
+            "Concassage des tomates de données...",
+            "Poêlage des champignons d'interface...",
+            "Gratinage des fromages de fonctions...",
+            "Décongélation des surgelés numériques...",
+            "Pressage des agrumes vitaminés...",
+            "Battage de la crème fouettée virtuelle..."
+        ];
+        
+        // Simulation du chargement
+        let progress = 0;
+        const progressBar = document.getElementById('progress-bar');
+        const loadingText = document.getElementById('loading-text');
+        const splashScreen = document.getElementById('splash-screen');
+        const app = document.getElementById('app');
+        
+        // Fonction pour mettre à jour le texte de chargement
+        function updateLoadingText() {
+            const randomPhrase = loadingPhrases[Math.floor(Math.random() * loadingPhrases.length)];
+            loadingText.textContent = randomPhrase;
+        }
+        
+        // Mise à jour du texte toutes les 2000ms (2 secondes)
+        const textInterval = setInterval(updateLoadingText, 2000);
+        
+        // Simulation de progression (durée minimale 7 secondes)
+        const startTime = Date.now();
+        const minDuration = 7000; // 7 secondes minimum
+        
+        const progressInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const timeProgress = (elapsed / minDuration) * 100;
+            
+            // Progression aléatoire mais limitée par le temps
+            progress += Math.random() * 10;
+            
+            // On s'assure de ne pas dépasser 100% avant 5 secondes
+            if (elapsed < minDuration) {
+                progress = Math.min(progress, timeProgress);
+            }
+            
+            if (progress > 100) progress = 100;
+            
+            progressBar.style.width = progress + '%';
+            
+            if (progress >= 100 && elapsed >= minDuration) {
+                clearInterval(progressInterval);
+                clearInterval(textInterval);
+                loadingText.textContent = "C'est prêt ! Bon appétit 🎉";
+                
+                // Transition vers l'app
+                setTimeout(() => {
+                    splashScreen.classList.add('hide');
+                    setTimeout(() => {
+                        splashScreen.style.display = 'none';
+                        app.style.display = 'block';
+                        // Ici on initialisera l'app
+                        initializeApp();
+                    }, 500);
+                }, 1000);
+            }
+        }, 200);
+        
+        // Fonction d'initialisation de l'app (placeholder)
+        function initializeApp() {
+            // L'app sera initialisée par app.js
+            console.log('Splash screen terminé, en attente de app.js...');
+        }
+    </script>
+    
+    <!-- Scripts de l'application -->
+    <script src="js/router.js"></script>
+    <script src="pages/dashboard.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
