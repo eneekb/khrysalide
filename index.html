@@ -3,209 +3,355 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Connexion Google Sheets</title>
+    <title>Polices Khrysalide - Test Chiffres</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&family=Fredoka:wght@400;600;700&family=Bubblegum+Sans&family=Varela+Round&family=Dosis:wght@600;700;800&family=Rubik:wght@500;700&family=Quicksand:wght@500;700&family=Comfortaa:wght@500;700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+    
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            background: linear-gradient(to bottom right, #FAFAFA, #E6FFF9);
+            min-height: 100vh;
+            padding: 40px 20px;
+            font-family: 'Nunito', sans-serif;
+            color: #6B7280;
         }
+        
         .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-family: 'Quicksand', sans-serif;
+            color: #52D1B3;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+        }
+        
+        .font-card {
             background: white;
+            border-radius: 30px;
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(82, 209, 179, 0.15);
+            transition: transform 0.3s ease;
         }
-        button {
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 10px 0;
+        
+        .font-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(82, 209, 179, 0.25);
         }
-        button:hover {
-            background-color: #357ae8;
+        
+        .font-name {
+            font-size: 1.2rem;
+            color: #FF8B94;
+            margin-bottom: 15px;
+            font-weight: 700;
         }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .status {
+        
+        .calories-display {
+            font-size: 3.5rem;
+            color: #52D1B3;
             margin: 20px 0;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f0f0f0;
+            text-align: center;
         }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        #result {
+        
+        .small-numbers {
+            display: flex;
+            justify-content: space-around;
             margin-top: 20px;
-            font-family: monospace;
-            background-color: #f0f0f0;
-            padding: 10px;
-            border-radius: 5px;
-            white-space: pre-wrap;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #FFD3B6 0%, #FFE5D3 100%);
+            border-radius: 20px;
+            padding: 15px 25px;
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            color: #52D1B3;
+            font-weight: 700;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6B7280;
+            margin-top: 5px;
+        }
+        
+        .emoji {
+            font-size: 2rem;
+            margin: 0 10px;
+        }
+        
+        /* Styles spécifiques pour chaque police */
+        .baloo { font-family: 'Baloo 2', cursive; }
+        .fredoka { font-family: 'Fredoka', sans-serif; }
+        .bubblegum { font-family: 'Bubblegum Sans', cursive; }
+        .varela { font-family: 'Varela Round', sans-serif; }
+        .dosis { font-family: 'Dosis', sans-serif; font-weight: 700; }
+        .rubik { font-family: 'Rubik', sans-serif; font-weight: 700; }
+        .quicksand { font-family: 'Quicksand', sans-serif; font-weight: 700; }
+        .comfortaa { font-family: 'Comfortaa', cursive; font-weight: 700; }
+        
+        .top-pick {
+            background: linear-gradient(135deg, #52D1B3 0%, #6BE4C8 100%);
+            color: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-left: 15px;
+        }
+        
+        .test-input {
+            margin-top: 40px;
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(255, 139, 148, 0.15);
+            text-align: center;
+        }
+        
+        input {
+            border: 3px solid #FFD3B6;
+            border-radius: 50px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            width: 300px;
+            text-align: center;
+            transition: border-color 0.3s ease;
+            font-family: 'Nunito', sans-serif;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #52D1B3;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Test Connexion Google Sheets</h1>
+        <h1>🦋 Test des polices pour Khrysalide</h1>
         
-        <button id="authorizeButton" onclick="handleAuthClick()">Se connecter avec Google</button>
-        <button id="signoutButton" onclick="handleSignoutClick()" style="display:none;">Se déconnecter</button>
-        
-        <div id="status" class="status"></div>
-        
-        <button id="readButton" onclick="readSheet()" style="display:none;">Lire la cellule A1</button>
-        <button id="writeButton" onclick="writeSheet()" style="display:none;">Écrire dans A1</button>
-        
-        <div id="result"></div>
+        <!-- Baloo 2 -->
+        <div class="font-card">
+            <div class="font-name">
+                Baloo 2
+                <span class="top-pick">⭐ Top choix</span>
+            </div>
+            <div class="calories-display baloo">
+                1 852 kcal <span class="emoji">🥗</span>
+            </div>
+            <div class="small-numbers">
+                <div class="stat-box">
+                    <div class="stat-number baloo">52,3</div>
+                    <div class="stat-label">Protéines</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number baloo">186</div>
+                    <div class="stat-label">Glucides</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number baloo">47,8</div>
+                    <div class="stat-label">Lipides</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fredoka -->
+        <div class="font-card">
+            <div class="font-name">
+                Fredoka
+                <span class="top-pick">⭐ Top choix</span>
+            </div>
+            <div class="calories-display fredoka">
+                1 852 kcal <span class="emoji">🍎</span>
+            </div>
+            <div class="small-numbers">
+                <div class="stat-box">
+                    <div class="stat-number fredoka">52,3</div>
+                    <div class="stat-label">Protéines</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number fredoka">186</div>
+                    <div class="stat-label">Glucides</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number fredoka">47,8</div>
+                    <div class="stat-label">Lipides</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bubblegum Sans -->
+        <div class="font-card">
+            <div class="font-name">Bubblegum Sans</div>
+            <div class="calories-display bubblegum">
+                1 852 kcal <span class="emoji">💪</span>
+            </div>
+            <div class="small-numbers">
+                <div class="stat-box">
+                    <div class="stat-number bubblegum">52,3</div>
+                    <div class="stat-label">Protéines</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number bubblegum">186</div>
+                    <div class="stat-label">Glucides</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number bubblegum">47,8</div>
+                    <div class="stat-label">Lipides</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Varela Round -->
+        <div class="font-card">
+            <div class="font-name">Varela Round</div>
+            <div class="calories-display varela">
+                1 852 kcal <span class="emoji">🥕</span>
+            </div>
+            <div class="small-numbers">
+                <div class="stat-box">
+                    <div class="stat-number varela">52,3</div>
+                    <div class="stat-label">Protéines</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number varela">186</div>
+                    <div class="stat-label">Glucides</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number varela">47,8</div>
+                    <div class="stat-label">Lipides</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dosis -->
+        <div class="font-card">
+            <div class="font-name">Dosis (Bold)</div>
+            <div class="calories-display dosis">
+                1 852 kcal <span class="emoji">🍅</span>
+            </div>
+            <div class="small-numbers">
+                <div class="stat-box">
+                    <div class="stat-number dosis">52,3</div>
+                    <div class="stat-label">Protéines</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number dosis">186</div>
+                    <div class="stat-label">Glucides</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number dosis">47,8</div>
+                    <div class="stat-label">Lipides</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rubik -->
+        <div class="font-card">
+            <div class="font-name">Rubik (Bold)</div>
+            <div class="calories-display rubik">
+                1 852 kcal <span class="emoji">🥑</span>
+            </div>
+            <div class="small-numbers">
+                <div class="stat-box">
+                    <div class="stat-number rubik">52,3</div>
+                    <div class="stat-label">Protéines</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number rubik">186</div>
+                    <div class="stat-label">Glucides</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number rubik">47,8</div>
+                    <div class="stat-label">Lipides</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quicksand -->
+        <div class="font-card">
+            <div class="font-name">Quicksand (Bold)</div>
+            <div class="calories-display quicksand">
+                1 852 kcal <span class="emoji">🍓</span>
+            </div>
+            <div class="small-numbers">
+                <div class="stat-box">
+                    <div class="stat-number quicksand">52,3</div>
+                    <div class="stat-label">Protéines</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number quicksand">186</div>
+                    <div class="stat-label">Glucides</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number quicksand">47,8</div>
+                    <div class="stat-label">Lipides</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comfortaa -->
+        <div class="font-card">
+            <div class="font-name">Comfortaa (Bold)</div>
+            <div class="calories-display comfortaa">
+                1 852 kcal <span class="emoji">🥦</span>
+            </div>
+            <div class="small-numbers">
+                <div class="stat-box">
+                    <div class="stat-number comfortaa">52,3</div>
+                    <div class="stat-label">Protéines</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number comfortaa">186</div>
+                    <div class="stat-label">Glucides</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number comfortaa">47,8</div>
+                    <div class="stat-label">Lipides</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test personnalisé -->
+        <div class="test-input">
+            <h2 style="color: #52D1B3; margin-bottom: 20px;">Teste tes propres chiffres !</h2>
+            <input type="text" id="testInput" placeholder="Tape des chiffres ici..." value="1234,56">
+            <div id="testOutput" style="margin-top: 20px;"></div>
+        </div>
     </div>
 
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
-
     <script>
-        // Configuration
-        const CLIENT_ID = '448205179983-4dsjnf2st3n87rpuemvdgl5ufledov42.apps.googleusercontent.com';
-        const API_KEY = 'AIzaSyAOjvMmmLPoFtWhyWuxDh2Ca3QzO_y_MAo'; // Clé API publique pour tests
-        const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
-        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
-        const SPREADSHEET_ID = '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY';
-
-        let tokenClient;
-        let gapiInited = false;
-        let gisInited = false;
-
-        function updateStatus(message, isError = false) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = 'status ' + (isError ? 'error' : 'success');
-        }
-
-        function gapiLoaded() {
-            gapi.load('client', initializeGapiClient);
-        }
-
-        async function initializeGapiClient() {
-            await gapi.client.init({
-                apiKey: API_KEY,
-                discoveryDocs: [DISCOVERY_DOC],
+        const testInput = document.getElementById('testInput');
+        const testOutput = document.getElementById('testOutput');
+        
+        function updateTest() {
+            const value = testInput.value;
+            const fonts = ['baloo', 'fredoka', 'bubblegum', 'varela', 'dosis', 'rubik', 'quicksand', 'comfortaa'];
+            
+            let html = '';
+            fonts.forEach(font => {
+                html += `<div style="font-size: 2.5rem; margin: 10px 0;" class="${font}">${value}</div>`;
             });
-            gapiInited = true;
-            maybeEnableButtons();
+            
+            testOutput.innerHTML = html;
         }
-
-        function gisLoaded() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: '', // Défini plus tard
-            });
-            gisInited = true;
-            maybeEnableButtons();
-        }
-
-        function maybeEnableButtons() {
-            if (gapiInited && gisInited) {
-                document.getElementById('authorizeButton').disabled = false;
-                updateStatus('Prêt à se connecter');
-            }
-        }
-
-        function handleAuthClick() {
-            tokenClient.callback = async (resp) => {
-                if (resp.error !== undefined) {
-                    updateStatus('Erreur d\'authentification: ' + resp.error, true);
-                    return;
-                }
-                updateStatus('Connecté avec succès!');
-                document.getElementById('signoutButton').style.display = 'inline-block';
-                document.getElementById('authorizeButton').style.display = 'none';
-                document.getElementById('readButton').style.display = 'inline-block';
-                document.getElementById('writeButton').style.display = 'inline-block';
-            };
-
-            if (gapi.client.getToken() === null) {
-                tokenClient.requestAccessToken({prompt: 'consent'});
-            } else {
-                tokenClient.requestAccessToken({prompt: ''});
-            }
-        }
-
-        function handleSignoutClick() {
-            const token = gapi.client.getToken();
-            if (token !== null) {
-                google.accounts.oauth2.revoke(token.access_token);
-                gapi.client.setToken('');
-                document.getElementById('authorizeButton').style.display = 'inline-block';
-                document.getElementById('signoutButton').style.display = 'none';
-                document.getElementById('readButton').style.display = 'none';
-                document.getElementById('writeButton').style.display = 'none';
-                document.getElementById('result').textContent = '';
-                updateStatus('Déconnecté');
-            }
-        }
-
-        async function readSheet() {
-            try {
-                updateStatus('Lecture en cours...');
-                const response = await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'A1:E5', // Lit les 5 premières lignes et colonnes
-                });
-                
-                const result = response.result;
-                if (result.values && result.values.length > 0) {
-                    document.getElementById('result').textContent = 
-                        'Données lues:\n' + JSON.stringify(result.values, null, 2);
-                    updateStatus('Lecture réussie!');
-                } else {
-                    document.getElementById('result').textContent = 'Aucune donnée trouvée';
-                    updateStatus('Le sheet est vide', true);
-                }
-            } catch (err) {
-                updateStatus('Erreur: ' + err.message, true);
-                document.getElementById('result').textContent = 'Erreur:\n' + JSON.stringify(err, null, 2);
-            }
-        }
-
-        async function writeSheet() {
-            try {
-                updateStatus('Écriture en cours...');
-                const values = [
-                    ['Test écriture', new Date().toLocaleString('fr-FR')]
-                ];
-                
-                const response = await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: 'A1:B1',
-                    valueInputOption: 'RAW',
-                    resource: {
-                        values: values
-                    }
-                });
-                
-                document.getElementById('result').textContent = 
-                    'Écriture réussie!\nCellule A1: "Test écriture"\nCellule B1: ' + values[0][1];
-                updateStatus('Écriture réussie!');
-            } catch (err) {
-                updateStatus('Erreur: ' + err.message, true);
-                document.getElementById('result').textContent = 'Erreur:\n' + JSON.stringify(err, null, 2);
-            }
-        }
+        
+        testInput.addEventListener('input', updateTest);
+        updateTest();
     </script>
 </body>
 </html>
