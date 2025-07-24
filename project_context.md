@@ -1,5 +1,28 @@
 # PROJECT_CONTEXT - Khrysalide
 
+## 🎯 Version actuelle : 1.0.1
+
+### Règles de versioning
+- **TOUJOURS** incrémenter la version à chaque modification
+- Format : MAJEUR.MINEUR.PATCH (ex: 1.0.1)
+  - PATCH (+0.0.1) : corrections, petits ajustements
+  - MINEUR (+0.1.0) : nouvelles fonctionnalités
+  - MAJEUR (+1.0.0) : changements majeurs
+- Mettre à jour dans : 
+  - index.html (div.version)
+  - app.js (APP_CONFIG.version)
+  - Tous les fichiers modifiés (commentaire d'en-tête)
+  - PROJECT_CONTEXT.md (version actuelle + historique)
+
+### 📝 Checklist de versioning (à chaque modification)
+- [ ] Déterminer le type de changement (patch/minor/major)
+- [ ] Incrémenter la version en conséquence
+- [ ] Mettre à jour index.html
+- [ ] Mettre à jour app.js
+- [ ] Ajouter version dans les fichiers modifiés
+- [ ] Mettre à jour PROJECT_CONTEXT (version + historique)
+- [ ] Commit avec message : "v1.0.X: description"
+
 ## 🏗️ Architecture globale
 
 ### Structure des fichiers
@@ -9,7 +32,8 @@ khrysalide/
 ├── styles.css          # Styles globaux et variables CSS
 ├── manifest.json       # PWA manifest
 ├── js/
-│   ├── app.js         # Initialisation, routeur principal
+│   ├── app.js         # Initialisation, coordination des modules
+│   ├── router.js      # Gestion de la navigation SPA
 │   ├── auth.js        # Authentification OAuth Google
 │   ├── sheets-api.js  # Interface avec Google Sheets API
 │   ├── storage.js     # Cache local et gestion offline
@@ -75,16 +99,30 @@ export function clearOfflineQueue()                 // Vide la queue après sync
 export function isOffline()                         // Détecte le mode offline
 ```
 
-### 🚦 app.js (Router)
+### 🔧 app.js
 ```javascript
-// Routeur SPA et initialisation
-export function init()                              // Initialise l'application
-export function navigateTo(page)                    // Navigation vers une page
-export function getCurrentPage()                    // Page actuelle
-export function registerPage(name, component)       // Enregistre une page
-export function showLoader()                        // Affiche le loader
-export function hideLoader()                        // Cache le loader
-export function showToast(message, type)            // Notification (success, error, info)
+// Coordinateur principal de l'application
+const app = {
+  config: {name, version, api: {...}},     // Configuration globale
+  state: {user, isAuthenticated, ...},     // État partagé
+  modules: {auth, router, sheets, ...},    // Références aux modules
+  
+  init()                                   // Initialise l'application
+  showToast(message, type)                 // Affiche une notification
+  log(...args)                             // Log en mode debug
+}
+```
+
+### 🚦 router.js
+```javascript
+// Gestion de la navigation et des pages
+class Router {
+  constructor(app)                         // Prend l'app en paramètre
+  init()                                   // Initialise le routeur
+  registerPage(name, config)               // Enregistre une page
+  navigateTo(page)                         // Navigation programmatique
+  onPageChange(callback)                   // Écoute les changements
+}
 ```
 
 ### 🛠️ utils.js
@@ -104,38 +142,31 @@ export function generateId()                        // Génère un ID unique
 ### Structure d'une page
 ```javascript
 // pages/exemple.js
-export default class ExemplePage {
-  constructor() {
-    this.data = null
-    this.elements = {}
+class ExemplePage {
+  constructor(app) {
+    this.app = app    // Référence à l'app principale
+    this.data = {}    // Données de la page
   }
 
   async init() {
     // Chargement des données
     await this.loadData()
-    // Rendu initial
-    this.render()
-    // Event listeners
-    this.attachEvents()
-  }
-
-  async loadData() {
-    // Récupération depuis Sheets API
   }
 
   render() {
-    // Génération du HTML
+    // Retourne le HTML de la page
     return `<div class="page">...</div>`
   }
 
   attachEvents() {
-    // Gestion des événements
+    // Attache les événements après le rendu
   }
-
-  destroy() {
-    // Nettoyage si nécessaire
-  }
+  
+  // Méthodes spécifiques à la page
 }
+
+// Export global
+window.ExemplePage = ExemplePage
 ```
 
 ### Structure d'un composant
@@ -227,11 +258,15 @@ export class ExempleComponent {
 - Configuration Google Cloud
 - Authentification OAuth testée
 - Structure Google Sheets créée
+- index.html avec splash screen
+- styles.css avec tous les composants UI
+- app.js (coordinateur principal)
+- router.js (navigation SPA)
+- pages/dashboard.js (page d'accueil)
 
 ### 🚧 En cours
-- [ ] index.html et structure de base
-- [ ] Système d'authentification
-- [ ] Router SPA
+- [ ] Système d'authentification (auth.js)
+- [ ] API Google Sheets (sheets-api.js)
 
 ### 📋 À faire
 - [ ] Page Dashboard
@@ -250,11 +285,19 @@ export class ExempleComponent {
 # Serveur local pour dev
 python -m http.server 8080
 
-# Deploy sur GitHub Pages
+# Deploy sur GitHub Pages (avec incrémentation de version)
+# 1. Vérifier la checklist de versioning
+# 2. Puis :
 git add .
-git commit -m "feat: description"
+git commit -m "v1.0.X: description des changements"
 git push origin main
 ```
+
+### Exemples de messages de commit
+- `v1.0.1: refactor: séparation app.js, router.js et dashboard.js`
+- `v1.0.2: fix: correction navigation mobile`
+- `v1.1.0: feat: ajout authentification Google`
+- `v2.0.0: breaking: refonte complète de l'interface`
 
 ## 📌 Notes importantes
 
@@ -263,6 +306,21 @@ git push origin main
 3. **UX** : Messages encourageants, animations douces
 4. **Sécurité** : Token en mémoire uniquement, pas de localStorage
 5. **Offline** : L'app doit rester utilisable sans connexion
+6. **Versioning** : TOUJOURS incrémenter la version à chaque modification
 
 ---
-*Dernière mise à jour : 24/07/2025*
+*Dernière mise à jour : 24/07/2025 - v1.0.1*
+
+## 📋 Historique des versions
+
+_Note : Système de versioning ajouté à partir de v1.0.1_
+
+### v1.0.1 (24/07/2025)
+- Refactorisation : séparation app.js, router.js et dashboard.js
+- Ajout du système de versioning automatique
+- Mise à jour PROJECT_CONTEXT avec règles de versioning
+
+### v1.0.0 (24/07/2025)
+- Version initiale
+- Écran de démarrage avec animations
+- Structure de base
