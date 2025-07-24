@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT - Khrysalide
 
-## 🎯 Version actuelle : 1.0.2
+## 🎯 Version actuelle : 1.0.3
 
 ### Règles de versioning
 - **TOUJOURS** incrémenter la version à chaque modification
@@ -309,11 +309,15 @@ git push origin main
 6. **Versioning** : TOUJOURS incrémenter la version à chaque modification
 
 ---
-*Dernière mise à jour : 24/07/2025 - v1.0.2*
+*Dernière mise à jour : 24/07/2025 - v1.0.3*
 
 ## 📋 Historique des versions
 
 _Note : Système de versioning ajouté à partir de v1.0.1_
+
+### v1.0.3 (24/07/2025)
+- Fix: Conflit entre les deux logiques de splash screen
+- L'écran de démarrage est maintenant géré uniquement par index.html
 
 ### v1.0.2 (24/07/2025)
 - Fix: Suppression de l'export ES6 dans app.js
