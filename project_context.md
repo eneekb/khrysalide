@@ -1,5 +1,28 @@
 # PROJECT_CONTEXT - Khrysalide
 
+## 🎯 Version actuelle : 1.0.1
+
+### Règles de versioning
+- **TOUJOURS** incrémenter la version à chaque modification
+- Format : MAJEUR.MINEUR.PATCH (ex: 1.0.1)
+  - PATCH (+0.0.1) : corrections, petits ajustements
+  - MINEUR (+0.1.0) : nouvelles fonctionnalités
+  - MAJEUR (+1.0.0) : changements majeurs
+- Mettre à jour dans : 
+  - index.html (div.version)
+  - app.js (APP_CONFIG.version)
+  - Tous les fichiers modifiés (commentaire d'en-tête)
+  - PROJECT_CONTEXT.md (version actuelle + historique)
+
+### 📝 Checklist de versioning (à chaque modification)
+- [ ] Déterminer le type de changement (patch/minor/major)
+- [ ] Incrémenter la version en conséquence
+- [ ] Mettre à jour index.html
+- [ ] Mettre à jour app.js
+- [ ] Ajouter version dans les fichiers modifiés
+- [ ] Mettre à jour PROJECT_CONTEXT (version + historique)
+- [ ] Commit avec message : "v1.0.X: description"
+
 ## 🏗️ Architecture globale
 
 ### Structure des fichiers
@@ -262,11 +285,19 @@ export class ExempleComponent {
 # Serveur local pour dev
 python -m http.server 8080
 
-# Deploy sur GitHub Pages
+# Deploy sur GitHub Pages (avec incrémentation de version)
+# 1. Vérifier la checklist de versioning
+# 2. Puis :
 git add .
-git commit -m "feat: description"
+git commit -m "v1.0.X: description des changements"
 git push origin main
 ```
+
+### Exemples de messages de commit
+- `v1.0.1: refactor: séparation app.js, router.js et dashboard.js`
+- `v1.0.2: fix: correction navigation mobile`
+- `v1.1.0: feat: ajout authentification Google`
+- `v2.0.0: breaking: refonte complète de l'interface`
 
 ## 📌 Notes importantes
 
@@ -275,8 +306,21 @@ git push origin main
 3. **UX** : Messages encourageants, animations douces
 4. **Sécurité** : Token en mémoire uniquement, pas de localStorage
 5. **Offline** : L'app doit rester utilisable sans connexion
+6. **Versioning** : TOUJOURS incrémenter la version à chaque modification
 
 ---
-*Dernière mise à jour : 24/07/2025*
----
-*Dernière mise à jour : 24/07/2025*
+*Dernière mise à jour : 24/07/2025 - v1.0.1*
+
+## 📋 Historique des versions
+
+_Note : Système de versioning ajouté à partir de v1.0.1_
+
+### v1.0.1 (24/07/2025)
+- Refactorisation : séparation app.js, router.js et dashboard.js
+- Ajout du système de versioning automatique
+- Mise à jour PROJECT_CONTEXT avec règles de versioning
+
+### v1.0.0 (24/07/2025)
+- Version initiale
+- Écran de démarrage avec animations
+- Structure de base
