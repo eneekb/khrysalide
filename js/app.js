@@ -1,4 +1,4 @@
-/**/**
+/**
  * app.js - Point d'entrée et coordinateur principal de Khrysalide
  * Initialise et coordonne tous les modules
  * Version: 1.0.3
