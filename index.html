@@ -324,12 +324,12 @@
             loadingText.textContent = randomPhrase;
         }
         
-        // Mise à jour du texte toutes les 1500ms (1.5 secondes)
-        const textInterval = setInterval(updateLoadingText, 1500);
+        // Mise à jour du texte toutes les 2000ms (2 secondes)
+        const textInterval = setInterval(updateLoadingText, 2000);
         
-        // Simulation de progression (durée minimale 5 secondes)
+        // Simulation de progression (durée minimale 7 secondes)
         const startTime = Date.now();
-        const minDuration = 5000; // 5 secondes minimum
+        const minDuration = 7000; // 7 secondes minimum
         
         const progressInterval = setInterval(() => {
             const elapsed = Date.now() - startTime;
