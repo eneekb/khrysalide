@@ -4,6 +4,7 @@
  * Version: 1.0.3
  */
 
+
 // Configuration globale de l'application
 const APP_CONFIG = {
   name: 'Khrysalide',
