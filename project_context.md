@@ -9,7 +9,8 @@ khrysalide/
 ├── styles.css          # Styles globaux et variables CSS
 ├── manifest.json       # PWA manifest
 ├── js/
-│   ├── app.js         # Initialisation, routeur principal
+│   ├── app.js         # Initialisation, coordination des modules
+│   ├── router.js      # Gestion de la navigation SPA
 │   ├── auth.js        # Authentification OAuth Google
 │   ├── sheets-api.js  # Interface avec Google Sheets API
 │   ├── storage.js     # Cache local et gestion offline
@@ -75,16 +76,30 @@ export function clearOfflineQueue()                 // Vide la queue après sync
 export function isOffline()                         // Détecte le mode offline
 ```
 
-### 🚦 app.js (Router)
+### 🔧 app.js
 ```javascript
-// Routeur SPA et initialisation
-export function init()                              // Initialise l'application
-export function navigateTo(page)                    // Navigation vers une page
-export function getCurrentPage()                    // Page actuelle
-export function registerPage(name, component)       // Enregistre une page
-export function showLoader()                        // Affiche le loader
-export function hideLoader()                        // Cache le loader
-export function showToast(message, type)            // Notification (success, error, info)
+// Coordinateur principal de l'application
+const app = {
+  config: {name, version, api: {...}},     // Configuration globale
+  state: {user, isAuthenticated, ...},     // État partagé
+  modules: {auth, router, sheets, ...},    // Références aux modules
+  
+  init()                                   // Initialise l'application
+  showToast(message, type)                 // Affiche une notification
+  log(...args)                             // Log en mode debug
+}
+```
+
+### 🚦 router.js
+```javascript
+// Gestion de la navigation et des pages
+class Router {
+  constructor(app)                         // Prend l'app en paramètre
+  init()                                   // Initialise le routeur
+  registerPage(name, config)               // Enregistre une page
+  navigateTo(page)                         // Navigation programmatique
+  onPageChange(callback)                   // Écoute les changements
+}
 ```
 
 ### 🛠️ utils.js
@@ -104,38 +119,31 @@ export function generateId()                        // Génère un ID unique
 ### Structure d'une page
 ```javascript
 // pages/exemple.js
-export default class ExemplePage {
-  constructor() {
-    this.data = null
-    this.elements = {}
+class ExemplePage {
+  constructor(app) {
+    this.app = app    // Référence à l'app principale
+    this.data = {}    // Données de la page
   }
 
   async init() {
     // Chargement des données
     await this.loadData()
-    // Rendu initial
-    this.render()
-    // Event listeners
-    this.attachEvents()
-  }
-
-  async loadData() {
-    // Récupération depuis Sheets API
   }
 
   render() {
-    // Génération du HTML
+    // Retourne le HTML de la page
     return `<div class="page">...</div>`
   }
 
   attachEvents() {
-    // Gestion des événements
+    // Attache les événements après le rendu
   }
-
-  destroy() {
-    // Nettoyage si nécessaire
-  }
+  
+  // Méthodes spécifiques à la page
 }
+
+// Export global
+window.ExemplePage = ExemplePage
 ```
 
 ### Structure d'un composant
@@ -227,11 +235,15 @@ export class ExempleComponent {
 - Configuration Google Cloud
 - Authentification OAuth testée
 - Structure Google Sheets créée
+- index.html avec splash screen
+- styles.css avec tous les composants UI
+- app.js (coordinateur principal)
+- router.js (navigation SPA)
+- pages/dashboard.js (page d'accueil)
 
 ### 🚧 En cours
-- [ ] index.html et structure de base
-- [ ] Système d'authentification
-- [ ] Router SPA
+- [ ] Système d'authentification (auth.js)
+- [ ] API Google Sheets (sheets-api.js)
 
 ### 📋 À faire
 - [ ] Page Dashboard
@@ -264,5 +276,7 @@ git push origin main
 4. **Sécurité** : Token en mémoire uniquement, pas de localStorage
 5. **Offline** : L'app doit rester utilisable sans connexion
 
+---
+*Dernière mise à jour : 24/07/2025*
 ---
 *Dernière mise à jour : 24/07/2025*
