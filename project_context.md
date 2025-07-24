@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT - Khrysalide
 
-## 🎯 Version actuelle : 1.0.1
+## 🎯 Version actuelle : 1.0.2
 
 ### Règles de versioning
 - **TOUJOURS** incrémenter la version à chaque modification
@@ -309,11 +309,16 @@ git push origin main
 6. **Versioning** : TOUJOURS incrémenter la version à chaque modification
 
 ---
-*Dernière mise à jour : 24/07/2025 - v1.0.1*
+*Dernière mise à jour : 24/07/2025 - v1.0.2*
 
 ## 📋 Historique des versions
 
 _Note : Système de versioning ajouté à partir de v1.0.1_
+
+### v1.0.2 (24/07/2025)
+- Fix: Suppression de l'export ES6 dans app.js
+- Fix: Ajout de la meta tag mobile-web-app-capable
+- Fix: Correction de l'erreur de syntaxe bloquant l'app
 
 ### v1.0.1 (24/07/2025)
 - Refactorisation : séparation app.js, router.js et dashboard.js
