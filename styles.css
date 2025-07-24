@@ -1,0 +1,1042 @@
+/* ==============================================
+   KHRYSALIDE - Feuille de styles principale
+   ============================================== */
+
+/* ==============================================
+   1. VARIABLES CSS
+   ============================================== */
+:root {
+  /* Couleurs principales */
+  --color-mint: #52D1B3;
+  --color-coral: #FF8B94;
+  --color-peach: #FFD3B6;
+  --color-bg: #FAFAFA;
+  --color-white: #FFFFFF;
+  
+  /* Couleurs de texte */
+  --color-text: #6B7280;
+  --color-text-dark: #374151;
+  --color-text-light: #9CA3AF;
+  
+  /* Couleurs d'état */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+  
+  /* Espacements */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* Arrondis */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-xl: 36px;
+  --radius-full: 9999px;
+  
+  /* Ombres */
+  --shadow-sm: 0 2px 8px rgba(82, 209, 179, 0.1);
+  --shadow-md: 0 4px 16px rgba(82, 209, 179, 0.15);
+  --shadow-lg: 0 8px 32px rgba(82, 209, 179, 0.2);
+  --shadow-coral: 0 4px 16px rgba(255, 139, 148, 0.2);
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease-out;
+  --transition-normal: 0.3s ease-out;
+  --transition-slow: 0.5s ease-out;
+  
+  /* Z-index */
+  --z-navigation: 100;
+  --z-modal: 200;
+  --z-toast: 300;
+  --z-splash: 9999;
+}
+
+/* ==============================================
+   2. RESET ET BASE
+   ============================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Comfortaa', cursive;
+  font-weight: 400;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  overflow-x: hidden;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* ==============================================
+   3. TYPOGRAPHIE
+   ============================================== */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--color-text-dark);
+  line-height: 1.2;
+  margin-bottom: var(--spacing-md);
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.125rem; }
+h6 { font-size: 1rem; }
+
+p {
+  margin-bottom: var(--spacing-md);
+}
+
+.text-small {
+  font-size: 0.875rem;
+}
+
+.text-large {
+  font-size: 1.125rem;
+}
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.text-mint { color: var(--color-mint); }
+.text-coral { color: var(--color-coral); }
+.text-peach { color: var(--color-peach); }
+
+/* ==============================================
+   4. SPLASH SCREEN
+   ============================================== */
+#splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #FAFAFA 0%, #E6FAF5 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-splash);
+  transition: opacity var(--transition-slow), transform var(--transition-slow);
+}
+
+#splash-screen.hide {
+  opacity: 0;
+  transform: scale(1.1);
+}
+
+.logo-container {
+  animation: logoAppear 0.8s ease-out;
+  margin-bottom: var(--spacing-lg);
+}
+
+.logo {
+  width: 120px;
+  height: 120px;
+  position: relative;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 8px 24px rgba(82, 209, 179, 0.3));
+}
+
+.app-title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--color-mint);
+  margin-bottom: var(--spacing-sm);
+  animation: titleSlide 0.8s ease-out 0.3s both;
+}
+
+.version {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  opacity: 0.7;
+  margin-bottom: var(--spacing-2xl);
+  animation: fadeIn 0.8s ease-out 0.5s both;
+}
+
+.loading-section {
+  width: 280px;
+  animation: fadeIn 0.8s ease-out 0.7s both;
+}
+
+.progress-container {
+  width: 100%;
+  height: 8px;
+  background-color: rgba(82, 209, 179, 0.2);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--spacing-md);
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-mint) 0%, var(--color-coral) 100%);
+  border-radius: var(--radius-full);
+  width: 0%;
+  transition: width var(--transition-normal);
+}
+
+.loading-text {
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--color-text);
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Bulles décoratives */
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.1;
+  animation: float 15s infinite ease-in-out;
+}
+
+.bubble1 {
+  width: 80px;
+  height: 80px;
+  background-color: var(--color-mint);
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.bubble2 {
+  width: 120px;
+  height: 120px;
+  background-color: var(--color-coral);
+  bottom: 10%;
+  right: 10%;
+  animation-delay: 5s;
+}
+
+.bubble3 {
+  width: 60px;
+  height: 60px;
+  background-color: var(--color-peach);
+  top: 50%;
+  right: 20%;
+  animation-delay: 10s;
+}
+
+/* ==============================================
+   5. LAYOUT ET CONTENEURS
+   ============================================== */
+#app {
+  display: none;
+  min-height: 100vh;
+  padding-bottom: 80px; /* Espace pour la navigation bottom */
+}
+
+.page {
+  padding: var(--spacing-lg);
+  max-width: 600px;
+  margin: 0 auto;
+  animation: pageEnter 0.3s ease-out;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+/* ==============================================
+   6. COMPOSANTS - BOUTONS
+   ============================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn-primary {
+  background-color: var(--color-mint);
+  color: var(--color-white);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+  background-color: #47B89F;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background-color: var(--color-coral);
+  color: var(--color-white);
+  box-shadow: var(--shadow-coral);
+}
+
+.btn-secondary:hover {
+  background-color: #FF7A86;
+  box-shadow: 0 6px 20px rgba(255, 139, 148, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--color-mint);
+  border: 3px solid var(--color-mint);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-mint);
+  color: var(--color-white);
+}
+
+.btn-small {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: 0.875rem;
+}
+
+.btn-large {
+  padding: var(--spacing-lg) var(--spacing-2xl);
+  font-size: 1.125rem;
+}
+
+.btn-icon {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+/* Bouton flottant */
+.fab {
+  position: fixed;
+  bottom: 100px;
+  right: var(--spacing-lg);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--color-mint);
+  color: var(--color-white);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border: none;
+}
+
+.fab:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 12px 40px rgba(82, 209, 179, 0.3);
+}
+
+/* ==============================================
+   7. COMPOSANTS - CARDS
+   ============================================== */
+.card {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin: 0;
+}
+
+.card-content {
+  color: var(--color-text);
+}
+
+.card-footer {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid rgba(107, 114, 128, 0.1);
+}
+
+/* Card colorées */
+.card-mint {
+  background: linear-gradient(135deg, var(--color-mint) 0%, #47B89F 100%);
+  color: var(--color-white);
+}
+
+.card-coral {
+  background: linear-gradient(135deg, var(--color-coral) 0%, #FF7A86 100%);
+  color: var(--color-white);
+}
+
+/* ==============================================
+   8. COMPOSANTS - INPUTS
+   ============================================== */
+.input-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.input-label {
+  display: block;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin-bottom: var(--spacing-sm);
+}
+
+.input {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 3px solid transparent;
+  border-radius: var(--radius-full);
+  background-color: rgba(82, 209, 179, 0.1);
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--color-text-dark);
+  transition: all var(--transition-normal);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-mint);
+  background-color: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.input::placeholder {
+  color: var(--color-text-light);
+}
+
+/* Search input avec icône */
+.search-input {
+  position: relative;
+}
+
+.search-input .input {
+  padding-left: var(--spacing-2xl);
+}
+
+.search-input::before {
+  content: "🔍";
+  position: absolute;
+  left: var(--spacing-lg);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.25rem;
+}
+
+/* ==============================================
+   9. COMPOSANTS - NAVIGATION
+   ============================================== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--color-white);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  z-index: var(--z-navigation);
+}
+
+.nav-list {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  list-style: none;
+  padding: var(--spacing-sm) 0;
+}
+
+.nav-item {
+  flex: 1;
+}
+
+.nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  color: var(--color-text-light);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.nav-link:hover {
+  color: var(--color-mint);
+}
+
+.nav-link.active {
+  color: var(--color-mint);
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+}
+
+.nav-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Badge pour notifications */
+.nav-badge {
+  position: absolute;
+  top: 0;
+  right: 20%;
+  background-color: var(--color-coral);
+  color: var(--color-white);
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ==============================================
+   10. COMPOSANTS - BADGES ET CHIPS
+   ============================================== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 700;
+  background-color: rgba(82, 209, 179, 0.2);
+  color: var(--color-mint);
+}
+
+.badge-coral {
+  background-color: rgba(255, 139, 148, 0.2);
+  color: var(--color-coral);
+}
+
+.badge-peach {
+  background-color: rgba(255, 211, 182, 0.3);
+  color: #E67E22;
+}
+
+/* Chips (catégories) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-full);
+  background-color: var(--color-white);
+  border: 2px solid var(--color-mint);
+  color: var(--color-mint);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.chip:hover {
+  background-color: var(--color-mint);
+  color: var(--color-white);
+}
+
+.chip.active {
+  background-color: var(--color-mint);
+  color: var(--color-white);
+}
+
+/* ==============================================
+   11. COMPOSANTS - LISTES
+   ============================================== */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.list-item {
+  background-color: var(--color-white);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.list-item:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
+}
+
+.list-item:active {
+  transform: scale(0.98);
+}
+
+.list-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.list-content {
+  flex: 1;
+}
+
+.list-title {
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin-bottom: var(--spacing-xs);
+}
+
+.list-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.list-action {
+  flex-shrink: 0;
+  color: var(--color-text-light);
+}
+
+/* ==============================================
+   12. COMPOSANTS - MODALES
+   ============================================== */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  animation: fadeIn var(--transition-normal);
+}
+
+.modal {
+  background-color: var(--color-white);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalEnter var(--transition-normal);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-light);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.modal-close:hover {
+  color: var(--color-text-dark);
+}
+
+/* ==============================================
+   13. COMPOSANTS - TOASTS
+   ============================================== */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-text-dark);
+  color: var(--color-white);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-toast);
+  animation: toastEnter var(--transition-normal);
+}
+
+.toast-success {
+  background-color: var(--color-success);
+}
+
+.toast-error {
+  background-color: var(--color-error);
+}
+
+.toast-warning {
+  background-color: var(--color-warning);
+}
+
+/* ==============================================
+   14. UTILITAIRES
+   ============================================== */
+/* Espacements */
+.mt-xs { margin-top: var(--spacing-xs); }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mt-xl { margin-top: var(--spacing-xl); }
+
+.mb-xs { margin-bottom: var(--spacing-xs); }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.mb-xl { margin-bottom: var(--spacing-xl); }
+
+.p-xs { padding: var(--spacing-xs); }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+
+/* Flex */
+.flex { display: flex; }
+.flex-column { flex-direction: column; }
+.flex-center { align-items: center; justify-content: center; }
+.flex-between { justify-content: space-between; }
+.flex-around { justify-content: space-around; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+/* Visibilité */
+.hidden { display: none; }
+.visible { display: block; }
+
+/* ==============================================
+   15. ANIMATIONS
+   ============================================== */
+@keyframes logoAppear {
+  0% {
+    transform: scale(0.3) rotate(180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes titleSlide {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  33% {
+    transform: translateY(-20px) scale(1.05);
+  }
+  66% {
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes toastEnter {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Animations de rebond */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.bounce {
+  animation: bounce 0.5s ease-out;
+}
+
+/* Pulse pour attirer l'attention */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* ==============================================
+   16. RESPONSIVE
+   ============================================== */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 var(--spacing-md);
+  }
+  
+  .page {
+    padding: var(--spacing-md);
+  }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: 0.875rem;
+  }
+  
+  .modal {
+    padding: var(--spacing-lg);
+  }
+  
+  .nav-text {
+    display: none;
+  }
+  
+  .nav-icon {
+    font-size: 1.75rem;
+  }
+}
+
+/* Support du notch iPhone */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .page {
+    padding-top: calc(var(--spacing-lg) + env(safe-area-inset-top));
+  }
+  
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ==============================================
+   17. CLASSES SPÉCIFIQUES KHRYSALIDE
+   ============================================== */
+/* Carte de repas */
+.meal-card {
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--color-mint);
+}
+
+.meal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.meal-type {
+  font-weight: 700;
+  color: var(--color-text-dark);
+}
+
+.meal-calories {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-mint);
+}
+
+/* Carte d'aliment */
+.food-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background-color: var(--color-white);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-sm);
+  transition: all var(--transition-fast);
+}
+
+.food-item:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
+}
+
+.food-name {
+  font-weight: 700;
+  color: var(--color-text-dark);
+}
+
+.food-calories {
+  color: var(--color-mint);
+  font-weight: 700;
+}
+
+/* Graphique de progression */
+.progress-ring {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+.progress-ring-circle {
+  stroke: var(--color-mint);
+  fill: transparent;
+  stroke-width: 12;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--transition-normal);
+}
+
+.progress-ring-bg {
+  stroke: rgba(82, 209, 179, 0.2);
+  fill: transparent;
+  stroke-width: 12;
+}
+
+/* État vide */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-2xl);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-title {
+  color: var(--color-text);
+  margin-bottom: var(--spacing-sm);
+}
+
+.empty-text {
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.skeleton-card {
+  height: 120px;
+  margin-bottom: var(--spacing-md);
+}
