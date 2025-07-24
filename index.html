@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Khrysalide - Suivi calorique</title>
-
     
     <!-- PWA Meta Tags -->
     <meta name="description" content="Application de suivi calorique et rééquilibrage alimentaire">
@@ -44,7 +43,7 @@
         <h1 class="app-title">Khrysalide</h1>
         
         <!-- Version -->
-        <div class="version">v1.0.0</div>
+        <div class="version">v1.0.1</div>
         
         <!-- Section de chargement -->
         <div class="loading-section">
@@ -161,19 +160,14 @@
         
         // Fonction d'initialisation de l'app (placeholder)
         function initializeApp() {
-            // TODO: Initialiser l'authentification Google
-            // TODO: Charger le routeur
-            // TODO: Afficher la première page
-            console.log('App initialized!');
-            
-            // Pour le moment, on affiche juste un message
-            app.innerHTML = `
-                <div class="flex flex-center flex-column" style="height: 100%;">
-                    <h2 class="text-mint mb-md">Bienvenue dans Khrysalide !</h2>
-                    <p class="text-center">L'application est prête à être développée 🚀</p>
-                </div>
-            `;
+            // L'app sera initialisée par app.js
+            console.log('Splash screen terminé, en attente de app.js...');
         }
     </script>
+    
+    <!-- Scripts de l'application -->
+    <script src="js/router.js"></script>
+    <script src="pages/dashboard.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
