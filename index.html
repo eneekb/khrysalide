@@ -2,395 +2,390 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polices Khrysalide - Test Chiffres</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khrysalide - Suivi calorique</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Application de suivi calorique et rééquilibrage alimentaire">
+    <meta name="theme-color" content="#52D1B3">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Khrysalide">
+    
+    <!-- Icons (à créer plus tard) -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&family=Fredoka:wght@400;600;700&family=Bubblegum+Sans&family=Varela+Round&family=Dosis:wght@600;700;800&family=Rubik:wght@500;700&family=Quicksand:wght@500;700&family=Comfortaa:wght@500;700&family=Nunito:wght@600;800&family=Chicle&family=Modak&family=Titan+One&family=Bungee&family=Shrikhand&family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap" rel="stylesheet">
     
     <style>
+        /* Variables CSS */
+        :root {
+            --color-mint: #52D1B3;
+            --color-coral: #FF8B94;
+            --color-peach: #FFD3B6;
+            --color-bg: #FAFAFA;
+            --color-text: #6B7280;
+            --color-text-dark: #374151;
+        }
+        
+        /* Reset et base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            background: linear-gradient(to bottom right, #FAFAFA, #E6FFF9);
-            min-height: 100vh;
-            padding: 40px 20px;
-            font-family: 'Nunito', sans-serif;
-            color: #6B7280;
+            font-family: 'Comfortaa', cursive;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            overflow: hidden;
+            position: relative;
+            height: 100vh;
         }
         
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        h1 {
-            font-family: 'Quicksand', sans-serif;
-            color: #52D1B3;
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 40px;
-        }
-        
-        .font-card {
-            background: white;
-            border-radius: 30px;
-            padding: 30px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(82, 209, 179, 0.15);
-            transition: transform 0.3s ease;
-        }
-        
-        .font-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(82, 209, 179, 0.25);
-        }
-        
-        .font-name {
-            font-size: 1.2rem;
-            color: #FF8B94;
-            margin-bottom: 15px;
-            font-weight: 700;
-        }
-        
-        .calories-display {
-            font-size: 3.5rem;
-            color: #52D1B3;
-            margin: 20px 0;
-            text-align: center;
-        }
-        
-        .small-numbers {
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #FAFAFA 0%, #E6FAF5 100%);
             display: flex;
-            justify-content: space-around;
-            margin-top: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
         }
         
-        .stat-box {
-            background: linear-gradient(135deg, #FFD3B6 0%, #FFE5D3 100%);
-            border-radius: 20px;
-            padding: 15px 25px;
-            text-align: center;
-            flex: 1;
-            min-width: 120px;
+        #splash-screen.hide {
+            opacity: 0;
+            transform: scale(1.1);
         }
         
-        .stat-number {
-            font-size: 2rem;
-            color: #52D1B3;
+        /* Logo animé */
+        .logo-container {
+            animation: logoAppear 0.8s ease-out;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            width: 120px;
+            height: 120px;
+            position: relative;
+        }
+        
+        .logo svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 8px 24px rgba(82, 209, 179, 0.3));
+        }
+        
+        @keyframes logoAppear {
+            0% {
+                transform: scale(0.3) rotate(180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1) rotate(10deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        /* Titre app */
+        .app-title {
+            font-size: 36px;
             font-weight: 700;
+            color: var(--color-mint);
+            margin-bottom: 8px;
+            animation: titleSlide 0.8s ease-out 0.3s both;
         }
         
-        .stat-label {
-            font-size: 0.9rem;
-            color: #6B7280;
-            margin-top: 5px;
+        @keyframes titleSlide {
+            0% {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
         
-        .emoji {
-            font-size: 2rem;
-            margin: 0 10px;
+        /* Version */
+        .version {
+            font-size: 14px;
+            color: var(--color-text);
+            opacity: 0.7;
+            margin-bottom: 40px;
+            animation: fadeIn 0.8s ease-out 0.5s both;
         }
         
-        /* Styles spécifiques pour chaque police */
-        .baloo { font-family: 'Baloo 2', cursive; }
-        .fredoka { font-family: 'Fredoka', sans-serif; }
-        .bubblegum { font-family: 'Bubblegum Sans', cursive; }
-        .varela { font-family: 'Varela Round', sans-serif; }
-        .dosis { font-family: 'Dosis', sans-serif; font-weight: 700; }
-        .rubik { font-family: 'Rubik', sans-serif; font-weight: 700; }
-        .quicksand { font-family: 'Quicksand', sans-serif; font-weight: 700; }
-        .comfortaa { font-family: 'Comfortaa', cursive; font-weight: 700; }
-        .chicle { font-family: 'Chicle', cursive; }
-        .modak { font-family: 'Modak', cursive; }
-        .titan { font-family: 'Titan One', cursive; }
-        .bungee { font-family: 'Bungee', cursive; }
-        .shrikhand { font-family: 'Shrikhand', cursive; }
-        .luckiest { font-family: 'Luckiest Guy', cursive; }
-        
-        .ultra-round {
-            background: linear-gradient(135deg, #FF8B94 0%, #FFB5BA 100%);
-            color: white;
-            padding: 5px 20px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            display: inline-block;
-            margin-left: 15px;
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 0.7; }
         }
         
-        .top-pick {
-            background: linear-gradient(135deg, #52D1B3 0%, #6BE4C8 100%);
-            color: white;
-            padding: 5px 20px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            display: inline-block;
-            margin-left: 15px;
+        /* Loading section */
+        .loading-section {
+            width: 280px;
+            animation: fadeIn 0.8s ease-out 0.7s both;
         }
         
-        .test-input {
-            margin-top: 40px;
-            background: white;
-            border-radius: 30px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(255, 139, 148, 0.15);
+        /* Barre de progression */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: rgba(82, 209, 179, 0.2);
+            border-radius: 100px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-mint) 0%, var(--color-coral) 100%);
+            border-radius: 100px;
+            width: 0%;
+            transition: width 0.3s ease-out;
+        }
+        
+        /* Texte de chargement */
+        .loading-text {
+            font-size: 14px;
             text-align: center;
+            color: var(--color-text);
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        input {
-            border: 3px solid #FFD3B6;
-            border-radius: 50px;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            width: 300px;
-            text-align: center;
-            transition: border-color 0.3s ease;
-            font-family: 'Nunito', sans-serif;
+        /* Bulles décoratives */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 15s infinite ease-in-out;
         }
         
-        input:focus {
-            outline: none;
-            border-color: #52D1B3;
+        .bubble1 {
+            width: 80px;
+            height: 80px;
+            background-color: var(--color-mint);
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .bubble2 {
+            width: 120px;
+            height: 120px;
+            background-color: var(--color-coral);
+            bottom: 10%;
+            right: 10%;
+            animation-delay: 5s;
+        }
+        
+        .bubble3 {
+            width: 60px;
+            height: 60px;
+            background-color: var(--color-peach);
+            top: 50%;
+            right: 20%;
+            animation-delay: 10s;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+            }
+            33% {
+                transform: translateY(-20px) scale(1.05);
+            }
+            66% {
+                transform: translateY(20px) scale(0.95);
+            }
+        }
+        
+        /* Container principal (caché au début) */
+        #app {
+            display: none;
+            height: 100vh;
+            overflow: hidden;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🦋 Test des polices pour Khrysalide</h1>
+    <!-- Écran de démarrage -->
+    <div id="splash-screen">
+        <!-- Bulles décoratives -->
+        <div class="bubble bubble1"></div>
+        <div class="bubble bubble2"></div>
+        <div class="bubble bubble3"></div>
         
-        <h2 style="text-align: center; color: #FF8B94; margin: 40px 0 30px 0;">Polices Ultra-Rondes (sans angles)</h2>
+        <!-- Logo -->
+        <div class="logo-container">
+            <div class="logo">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <!-- K stylisé avec formes organiques -->
+                    <path d="M 50 30 
+                             C 30 30, 20 45, 20 65 
+                             L 20 135
+                             C 20 155, 30 170, 50 170
+                             L 60 170
+                             C 70 170, 75 165, 75 155
+                             L 75 110
+                             L 110 70"
+                          fill="#52D1B3" />
+                    
+                    <path d="M 110 70
+                             C 90 90, 90 110, 110 130
+                             L 140 160
+                             C 160 180, 180 180, 180 160
+                             C 180 140, 160 120, 140 100
+                             L 110 70"
+                          fill="#FF8B94" opacity="0.9"/>
+                    
+                    <path d="M 140 100
+                             C 160 80, 180 80, 180 40
+                             C 180 20, 160 20, 140 40
+                             L 110 70"
+                          fill="#FF8B94" opacity="0.9"/>
+                </svg>
+            </div>
+        </div>
         
-        <!-- Chicle -->
-        <div class="font-card">
-            <div class="font-name">
-                Chicle
-                <span class="ultra-round">🔵 Ultra rond</span>
-            </div>
-            <div class="calories-display chicle">
-                1 852 kcal <span class="emoji">🥗</span>
-            </div>
-            <div class="small-numbers">
-                <div class="stat-box">
-                    <div class="stat-number chicle">52,3</div>
-                    <div class="stat-label">Protéines</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number chicle">186</div>
-                    <div class="stat-label">Glucides</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number chicle">47,8</div>
-                    <div class="stat-label">Lipides</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modak -->
-        <div class="font-card">
-            <div class="font-name">
-                Modak
-                <span class="ultra-round">🔵 Ultra rond</span>
-            </div>
-            <div class="calories-display modak">
-                1 852 kcal <span class="emoji">🍎</span>
-            </div>
-            <div class="small-numbers">
-                <div class="stat-box">
-                    <div class="stat-number modak">52,3</div>
-                    <div class="stat-label">Protéines</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number modak">186</div>
-                    <div class="stat-label">Glucides</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number modak">47,8</div>
-                    <div class="stat-label">Lipides</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Titan One -->
-        <div class="font-card">
-            <div class="font-name">
-                Titan One
-                <span class="ultra-round">🔵 Ultra rond</span>
-            </div>
-            <div class="calories-display titan">
-                1 852 kcal <span class="emoji">💪</span>
-            </div>
-            <div class="small-numbers">
-                <div class="stat-box">
-                    <div class="stat-number titan">52,3</div>
-                    <div class="stat-label">Protéines</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number titan">186</div>
-                    <div class="stat-label">Glucides</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number titan">47,8</div>
-                    <div class="stat-label">Lipides</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bungee -->
-        <div class="font-card">
-            <div class="font-name">
-                Bungee
-                <span class="ultra-round">🔵 Ultra rond</span>
-            </div>
-            <div class="calories-display bungee">
-                1 852 kcal <span class="emoji">🥕</span>
-            </div>
-            <div class="small-numbers">
-                <div class="stat-box">
-                    <div class="stat-number bungee">52,3</div>
-                    <div class="stat-label">Protéines</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number bungee">186</div>
-                    <div class="stat-label">Glucides</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number bungee">47,8</div>
-                    <div class="stat-label">Lipides</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Shrikhand -->
-        <div class="font-card">
-            <div class="font-name">
-                Shrikhand
-                <span class="ultra-round">🔵 Ultra rond</span>
-            </div>
-            <div class="calories-display shrikhand">
-                1 852 kcal <span class="emoji">🍅</span>
-            </div>
-            <div class="small-numbers">
-                <div class="stat-box">
-                    <div class="stat-number shrikhand">52,3</div>
-                    <div class="stat-label">Protéines</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number shrikhand">186</div>
-                    <div class="stat-label">Glucides</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number shrikhand">47,8</div>
-                    <div class="stat-label">Lipides</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Luckiest Guy -->
-        <div class="font-card">
-            <div class="font-name">
-                Luckiest Guy
-                <span class="ultra-round">🔵 Ultra rond</span>
-            </div>
-            <div class="calories-display luckiest">
-                1 852 kcal <span class="emoji">🥑</span>
-            </div>
-            <div class="small-numbers">
-                <div class="stat-box">
-                    <div class="stat-number luckiest">52,3</div>
-                    <div class="stat-label">Protéines</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number luckiest">186</div>
-                    <div class="stat-label">Glucides</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number luckiest">47,8</div>
-                    <div class="stat-label">Lipides</div>
-                </div>
-            </div>
-        </div>
-
-        <h2 style="text-align: center; color: #52D1B3; margin: 40px 0 30px 0;">Polices Classiques (plus d'angles)</h2>
+        <!-- Titre -->
+        <h1 class="app-title">Khrysalide</h1>
         
-        <!-- Baloo 2 -->
-        <div class="font-card">
-            <div class="font-name">
-                Baloo 2
-                <span class="top-pick">⭐ Top choix classique</span>
+        <!-- Version -->
+        <div class="version">v1.0.0</div>
+        
+        <!-- Section de chargement -->
+        <div class="loading-section">
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
             </div>
-            <div class="calories-display baloo">
-                1 852 kcal <span class="emoji">🥗</span>
-            </div>
-            <div class="small-numbers">
-                <div class="stat-box">
-                    <div class="stat-number baloo">52,3</div>
-                    <div class="stat-label">Protéines</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number baloo">186</div>
-                    <div class="stat-label">Glucides</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number baloo">47,8</div>
-                    <div class="stat-label">Lipides</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Fredoka -->
-        <div class="font-card">
-            <div class="font-name">
-                Fredoka
-                <span class="top-pick">⭐ Top choix classique</span>
-            </div>
-            <div class="calories-display fredoka">
-                1 852 kcal <span class="emoji">🍎</span>
-            </div>
-            <div class="small-numbers">
-                <div class="stat-box">
-                    <div class="stat-number fredoka">52,3</div>
-                    <div class="stat-label">Protéines</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number fredoka">186</div>
-                    <div class="stat-label">Glucides</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number fredoka">47,8</div>
-                    <div class="stat-label">Lipides</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Test personnalisé -->
-        <div class="test-input">
-            <h2 style="color: #52D1B3; margin-bottom: 20px;">Teste tes propres chiffres !</h2>
-            <input type="text" id="testInput" placeholder="Tape des chiffres ici..." value="1234567890">
-            <p style="color: #6B7280; margin: 10px 0;">Regarde bien les 4 et 7 dans les polices ultra-rondes !</p>
-            <div id="testOutput" style="margin-top: 20px;"></div>
+            <div class="loading-text" id="loading-text">Initialisation...</div>
         </div>
     </div>
-
+    
+    <!-- Container principal de l'app -->
+    <div id="app">
+        <!-- Le contenu de l'app sera injecté ici par JavaScript -->
+    </div>
+    
     <script>
-        const testInput = document.getElementById('testInput');
-        const testOutput = document.getElementById('testOutput');
+        // Phrases de chargement amusantes
+        const loadingPhrases = [
+            "Pesée des calories en cours...",
+            "Mixage des nutriments...",
+            "Préchauffage de votre motivation...",
+            "Épluchage des données...",
+            "Assaisonnement de l'interface...",
+            "Cuisson de vos statistiques à feu doux...",
+            "Découpe des portions en pixels...",
+            "Fouettage énergique des graphiques...",
+            "Marinade des recettes dans la base...",
+            "Flambage spectaculaire du dashboard...",
+            "Dressage artistique des boutons...",
+            "Réduction de la sauce calorique...",
+            "Émulsion parfaite des couleurs...",
+            "Caramélisation de l'expérience utilisateur...",
+            "Infusion des bonnes ondes...",
+            "Pochage délicat de vos objectifs...",
+            "Mijotage des algorithmes...",
+            "Dégustation des premières lignes de code...",
+            "Blanchiment des légumes virtuels...",
+            "Torréfaction des grains de données...",
+            "Pétrissage de la pâte à interface...",
+            "Fermentation des fonctionnalités...",
+            "Glacage des graphiques...",
+            "Tempérage du chocolat numérique...",
+            "Clarification du bouillon de code...",
+            "Macération des fruits statistiques...",
+            "Dégraissage de l'application...",
+            "Monter les blancs en neige digitale...",
+            "Faire revenir les oignons de connexion...",
+            "Saupoudrage de magie utilisateur...",
+            "Nappage de sauce hollandaise 2.0...",
+            "Brunoise de pixels bio...",
+            "Julienne de barres de progression...",
+            "Chiffonnade de feuilles de style...",
+            "Concassage des tomates de données...",
+            "Poêlage des champignons d'interface...",
+            "Gratinage des fromages de fonctions...",
+            "Décongélation des surgelés numériques...",
+            "Pressage des agrumes vitaminés...",
+            "Battage de la crème fouettée virtuelle..."
+        ];
         
-        function updateTest() {
-            const value = testInput.value;
-            const fonts = ['chicle', 'modak', 'titan', 'bungee', 'shrikhand', 'luckiest', 'baloo', 'fredoka'];
-            
-            let html = '';
-            fonts.forEach(font => {
-                html += `<div style="font-size: 2.5rem; margin: 10px 0;" class="${font}">${value}</div>`;
-            });
-            
-            testOutput.innerHTML = html;
+        // Simulation du chargement
+        let progress = 0;
+        const progressBar = document.getElementById('progress-bar');
+        const loadingText = document.getElementById('loading-text');
+        const splashScreen = document.getElementById('splash-screen');
+        const app = document.getElementById('app');
+        
+        // Fonction pour mettre à jour le texte de chargement
+        function updateLoadingText() {
+            const randomPhrase = loadingPhrases[Math.floor(Math.random() * loadingPhrases.length)];
+            loadingText.textContent = randomPhrase;
         }
         
-        testInput.addEventListener('input', updateTest);
-        updateTest();
+        // Mise à jour du texte toutes les 800ms
+        const textInterval = setInterval(updateLoadingText, 800);
+        
+        // Simulation de progression
+        const progressInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress > 100) progress = 100;
+            
+            progressBar.style.width = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(progressInterval);
+                clearInterval(textInterval);
+                loadingText.textContent = "C'est prêt ! Bon appétit 🎉";
+                
+                // Transition vers l'app
+                setTimeout(() => {
+                    splashScreen.classList.add('hide');
+                    setTimeout(() => {
+                        splashScreen.style.display = 'none';
+                        app.style.display = 'block';
+                        // Ici on initialisera l'app
+                        initializeApp();
+                    }, 500);
+                }, 1000);
+            }
+        }, 300);
+        
+        // Fonction d'initialisation de l'app (placeholder)
+        function initializeApp() {
+            // TODO: Initialiser l'authentification Google
+            // TODO: Charger le routeur
+            // TODO: Afficher la première page
+            console.log('App initialized!');
+            
+            // Pour le moment, on affiche juste un message
+            app.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column;">
+                    <h2 style="color: var(--color-mint); margin-bottom: 20px;">Bienvenue dans Khrysalide !</h2>
+                    <p style="color: var(--color-text);">L'application est prête à être développée 🚀</p>
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>
