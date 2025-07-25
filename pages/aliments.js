@@ -1,7 +1,7 @@
 /**
  * aliments.js - Page de consultation et recherche des aliments
  * Affiche la liste des ingrédients avec recherche et filtres
- * Version: 1.3.2
+ * Version: 1.3.5
  */
 
 class AlimentsPage {
@@ -11,7 +11,10 @@ class AlimentsPage {
     this.filteredIngredients = [];
     this.searchQuery = '';
     this.selectedCategory = 'all';
+    this.selectedFournisseur = 'all';
     this.categories = new Set();
+    this.fournisseurs = new Set();
+    this.menuOptions = { categories: [], fournisseurs: [], unites: [] };
     this.currentIngredient = null;
   }
 
@@ -19,6 +22,9 @@ class AlimentsPage {
     console.log('🥗 Initialisation de la page Aliments');
     
     try {
+      // Charge les options des menus déroulants
+      await this.loadMenuOptions();
+      
       // Charge les ingrédients depuis Sheets
       await this.loadIngredients();
       
@@ -31,16 +37,33 @@ class AlimentsPage {
     }
   }
 
+  async loadMenuOptions() {
+    try {
+      if (this.app.modules.sheets.readMenuOptions) {
+        this.menuOptions = await this.app.modules.sheets.readMenuOptions();
+        console.log('✅ Options de menus chargées:', this.menuOptions);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des menus:', error);
+      // Valeurs par défaut déjà définies dans readMenuOptions
+    }
+  }
+
   async loadIngredients() {
     try {
       this.ingredients = await this.app.modules.sheets.readIngredients();
       console.log(`✅ ${this.ingredients.length} ingrédients chargés`);
       
-      // Extrait les catégories uniques
+      // Construit les listes pour les filtres
       this.categories = new Set(['all']);
+      this.fournisseurs = new Set(['all']);
+      
       this.ingredients.forEach(ing => {
         if (ing.categorie) {
           this.categories.add(ing.categorie);
+        }
+        if (ing.fournisseur) {
+          this.fournisseurs.add(ing.fournisseur);
         }
       });
       
@@ -49,6 +72,7 @@ class AlimentsPage {
       // Données de démonstration en cas d'erreur
       this.ingredients = this.getDemoIngredients();
       this.categories = new Set(['all', 'Fruits', 'Légumes', 'Viandes', 'Produits laitiers']);
+      this.fournisseurs = new Set(['all', 'Bio Market', 'Primeur Local', 'Jardin Direct']);
     }
   }
 
@@ -58,6 +82,11 @@ class AlimentsPage {
     this.filteredIngredients = this.ingredients.filter(ing => {
       // Filtre par catégorie
       if (this.selectedCategory !== 'all' && ing.categorie !== this.selectedCategory) {
+        return false;
+      }
+      
+      // Filtre par fournisseur
+      if (this.selectedFournisseur !== 'all' && ing.fournisseur !== this.selectedFournisseur) {
         return false;
       }
       
@@ -87,8 +116,8 @@ class AlimentsPage {
         <div class="search-header">
           <div class="header-row">
             <h1 class="page-title">Aliments</h1>
-            <button class="btn-add" id="add-ingredient">
-              <span class="btn-icon">➕</span>
+            <button class="btn btn-primary btn-small" id="add-ingredient">
+              Ajouter
             </button>
           </div>
           
@@ -103,13 +132,22 @@ class AlimentsPage {
             <i class="search-icon">🔍</i>
           </div>
           
-          <!-- Filtre par catégorie (menu déroulant) -->
-          <div class="category-filter-container">
-            <select class="category-select" id="category-filter">
+          <!-- Filtres -->
+          <div class="filters-container">
+            <select class="filter-select" id="category-filter">
               <option value="all">Toutes les catégories</option>
               ${Array.from(this.categories).filter(cat => cat !== 'all').map(cat => `
                 <option value="${cat}" ${this.selectedCategory === cat ? 'selected' : ''}>
                   ${cat}
+                </option>
+              `).join('')}
+            </select>
+            
+            <select class="filter-select" id="fournisseur-filter">
+              <option value="all">Tous les fournisseurs</option>
+              ${Array.from(this.fournisseurs).filter(f => f !== 'all').map(f => `
+                <option value="${f}" ${this.selectedFournisseur === f ? 'selected' : ''}>
+                  ${f}
                 </option>
               `).join('')}
             </select>
@@ -168,25 +206,6 @@ class AlimentsPage {
           margin: 0;
         }
 
-        .btn-add {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background: var(--color-mint);
-          color: white;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 8px rgba(82, 209, 179, 0.3);
-        }
-
-        .btn-add:active {
-          transform: scale(0.95);
-        }
-
         .search-container {
           position: relative;
           margin-bottom: 12px;
@@ -216,22 +235,25 @@ class AlimentsPage {
           pointer-events: none;
         }
 
-        .category-filter-container {
+        .filters-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
           margin-bottom: 4px;
         }
 
-        .category-select {
+        .filter-select {
           width: 100%;
-          padding: 10px 16px;
+          padding: 10px 12px;
           border: 2px solid #eee;
           border-radius: 20px;
-          font-size: 15px;
+          font-size: 14px;
           background: white;
           cursor: pointer;
           transition: all 0.3s ease;
         }
 
-        .category-select:focus {
+        .filter-select:focus {
           outline: none;
           border-color: var(--color-mint);
         }
@@ -293,11 +315,20 @@ class AlimentsPage {
         .ingredient-kcal {
           background: var(--color-peach);
           color: var(--color-coral);
-          padding: 6px 10px;
+          padding: 8px 10px;
           border-radius: 12px;
           font-weight: 600;
-          font-size: 14px;
+          font-size: 13px;
           white-space: nowrap;
+          text-align: center;
+          line-height: 1.2;
+        }
+
+        .ingredient-kcal small {
+          display: block;
+          font-size: 10px;
+          font-weight: 400;
+          opacity: 0.8;
         }
 
         .empty-state {
@@ -411,9 +442,21 @@ class AlimentsPage {
           border-color: var(--color-mint);
         }
 
+        .form-input:disabled {
+          background: #f5f5f5;
+          color: #999;
+          cursor: not-allowed;
+        }
+
         .form-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+
+        .form-row-3 {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
           gap: 12px;
         }
 
@@ -465,6 +508,19 @@ class AlimentsPage {
           </div>
         </div>
       `;
+      
+      // Attache les événements aux boutons
+      setTimeout(() => {
+        const btnEdit = document.getElementById('btn-edit-ingredient');
+        if (btnEdit) {
+          btnEdit.addEventListener('click', () => this.editIngredient());
+        }
+        
+        const btnClose = document.getElementById('btn-close-view');
+        if (btnClose) {
+          btnClose.addEventListener('click', () => this.hideModal());
+        }
+      }, 0);
     }
 
     return this.filteredIngredients.map(ing => `
@@ -477,7 +533,8 @@ class AlimentsPage {
           </div>
         </div>
         <div class="ingredient-kcal">
-          ${Math.round(ing.kcal100g)} kcal
+          ${Math.round(ing.kcal100g)}
+          <small>Kcal/100g</small>
         </div>
       </div>
     `).join('');
@@ -499,6 +556,16 @@ class AlimentsPage {
     if (categorySelect) {
       categorySelect.addEventListener('change', (e) => {
         this.selectedCategory = e.target.value;
+        this.filterIngredients();
+        this.updateIngredientsList();
+      });
+    }
+
+    // Filtre de fournisseur
+    const fournisseurSelect = document.getElementById('fournisseur-filter');
+    if (fournisseurSelect) {
+      fournisseurSelect.addEventListener('change', (e) => {
+        this.selectedFournisseur = e.target.value;
         this.filterIngredients();
         this.updateIngredientsList();
       });
@@ -558,7 +625,7 @@ class AlimentsPage {
     }
   }
 
-  showIngredientModal(ingredient) {
+  async showIngredientModal(ingredient) {
     this.currentIngredient = ingredient;
     const modal = document.getElementById('ingredient-modal');
     const modalTitle = document.getElementById('modal-title');
@@ -570,20 +637,25 @@ class AlimentsPage {
       // Mode visualisation/édition
       modalBody.innerHTML = `
         <div id="view-mode">
+          <div class="info-row">
+            <div class="info-group">
+              <div class="info-label">Référence</div>
+              <div class="info-value">${ingredient.reference || '-'}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Catégorie</div>
+              <div class="info-value">${ingredient.categorie || '-'}</div>
+            </div>
+          </div>
+
           <div class="info-group">
             <div class="info-label">Nom</div>
             <div class="info-value">${ingredient.intitule}</div>
           </div>
 
-          <div class="info-row">
-            <div class="info-group">
-              <div class="info-label">Catégorie</div>
-              <div class="info-value">${ingredient.categorie || '-'}</div>
-            </div>
-            <div class="info-group">
-              <div class="info-label">Référence</div>
-              <div class="info-value">${ingredient.reference || '-'}</div>
-            </div>
+          <div class="info-group">
+            <div class="info-label">Précisions</div>
+            <div class="info-value">${ingredient.precisions || '-'}</div>
           </div>
 
           <div class="info-row">
@@ -602,24 +674,35 @@ class AlimentsPage {
             <div class="info-value">${ingredient.fournisseur || '-'}</div>
           </div>
 
+          <div class="info-row">
+            <div class="info-group">
+              <div class="info-label">Conditionnement</div>
+              <div class="info-value">${ingredient.conditionnement || '-'}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Unité</div>
+              <div class="info-value">${ingredient.unite || '-'}</div>
+            </div>
+          </div>
+
           <div class="info-group">
-            <div class="info-label">Conditionnement</div>
-            <div class="info-value">${ingredient.conditionnement || '-'}</div>
+            <div class="info-label">Poids (g) / Unité</div>
+            <div class="info-value">${ingredient.poidsParUnite || '-'}</div>
           </div>
 
           <div class="modal-actions">
-            <button class="btn btn-primary" onclick="app.modules.router.currentPageInstance.editIngredient()">
+            <button class="btn btn-primary" id="btn-edit-ingredient">
               Modifier
             </button>
-            <button class="btn btn-secondary" onclick="app.modules.router.currentPageInstance.hideModal()">
+            <button class="btn btn-secondary" id="btn-close-view">
               Fermer
             </button>
           </div>
         </div>
       `;
     } else {
-      // Mode création
-      this.showEditForm(null);
+      // Mode création - génère une nouvelle référence
+      await this.showEditForm(null);
     }
 
     modal.classList.add('show');
@@ -631,15 +714,38 @@ class AlimentsPage {
     }
   }
 
-  showEditForm(ingredient) {
+  async showEditForm(ingredient) {
     const modalBody = document.getElementById('modal-body');
+    
+    // Génère une nouvelle référence si création
+    let reference = ingredient ? ingredient.reference : '';
+    if (!ingredient && this.app.modules.sheets.getNextReference) {
+      try {
+        reference = await this.app.modules.sheets.getNextReference();
+      } catch (error) {
+        console.error('Erreur lors de la génération de référence:', error);
+        reference = Date.now().toString().slice(-4);
+      }
+    }
     
     modalBody.innerHTML = `
       <form id="ingredient-form">
         <div class="form-group">
+          <label class="form-label">Référence</label>
+          <input type="text" class="form-input" id="input-reference" 
+                 value="${reference}" disabled>
+        </div>
+
+        <div class="form-group">
           <label class="form-label">Nom *</label>
           <input type="text" class="form-input" id="input-intitule" 
                  value="${ingredient ? ingredient.intitule : ''}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Précisions</label>
+          <input type="text" class="form-input" id="input-precisions" 
+                 value="${ingredient ? ingredient.precisions || '' : ''}">
         </div>
 
         <div class="form-row">
@@ -647,7 +753,7 @@ class AlimentsPage {
             <label class="form-label">Catégorie</label>
             <select class="form-input" id="input-categorie">
               <option value="">Sélectionner...</option>
-              ${Array.from(this.categories).filter(cat => cat !== 'all').map(cat => `
+              ${this.menuOptions.categories.map(cat => `
                 <option value="${cat}" ${ingredient && ingredient.categorie === cat ? 'selected' : ''}>
                   ${cat}
                 </option>
@@ -655,9 +761,15 @@ class AlimentsPage {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Référence</label>
-            <input type="text" class="form-input" id="input-reference" 
-                   value="${ingredient ? ingredient.reference : ''}">
+            <label class="form-label">Fournisseur</label>
+            <select class="form-input" id="input-fournisseur">
+              <option value="">Sélectionner...</option>
+              ${this.menuOptions.fournisseurs.map(f => `
+                <option value="${f}" ${ingredient && ingredient.fournisseur === f ? 'selected' : ''}>
+                  ${f}
+                </option>
+              `).join('')}
+            </select>
           </div>
         </div>
 
@@ -674,28 +786,52 @@ class AlimentsPage {
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Fournisseur</label>
-          <input type="text" class="form-input" id="input-fournisseur" 
-                 value="${ingredient ? ingredient.fournisseur : ''}">
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">Conditionnement</label>
+            <input type="text" class="form-input" id="input-conditionnement" 
+                   value="${ingredient ? ingredient.conditionnement || '' : ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unité</label>
+            <select class="form-input" id="input-unite">
+              <option value="">Sélectionner...</option>
+              ${this.menuOptions.unites ? this.menuOptions.unites.map(u => `
+                <option value="${u}" ${ingredient && ingredient.unite === u ? 'selected' : ''}>
+                  ${u}
+                </option>
+              `).join('') : ''}
+            </select>
+          </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Conditionnement</label>
-          <input type="text" class="form-input" id="input-conditionnement" 
-                 value="${ingredient ? ingredient.conditionnement : ''}">
+          <label class="form-label">Poids (g) / Unité</label>
+          <input type="number" class="form-input" id="input-poids-unite" 
+                 value="${ingredient ? ingredient.poidsParUnite || '' : ''}"
+                 min="0" step="0.1">
         </div>
 
         <div class="modal-actions">
           <button type="submit" class="btn btn-primary">
             ${ingredient ? 'Enregistrer' : 'Ajouter'}
           </button>
-          <button type="button" class="btn btn-secondary" onclick="app.modules.router.currentPageInstance.hideModal()">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-form">
             Annuler
           </button>
         </div>
       </form>
     `;
+
+    // Gestion de l'unité et du poids
+    const uniteSelect = document.getElementById('input-unite');
+    const poidsInput = document.getElementById('input-poids-unite');
+    
+    uniteSelect.addEventListener('change', (e) => {
+      if (e.target.value.toLowerCase() === 'g') {
+        poidsInput.value = '1';
+      }
+    });
 
     // Attache l'événement de soumission
     const form = document.getElementById('ingredient-form');
@@ -703,17 +839,26 @@ class AlimentsPage {
       e.preventDefault();
       await this.saveIngredient(ingredient);
     });
+    
+    // Bouton annuler
+    const btnCancel = document.getElementById('btn-cancel-form');
+    if (btnCancel) {
+      btnCancel.addEventListener('click', () => this.hideModal());
+    }
   }
 
   async saveIngredient(existingIngredient) {
     const formData = {
-      intitule: document.getElementById('input-intitule').value,
-      categorie: document.getElementById('input-categorie').value,
       reference: document.getElementById('input-reference').value,
+      intitule: document.getElementById('input-intitule').value,
+      precisions: document.getElementById('input-precisions').value,
+      categorie: document.getElementById('input-categorie').value,
       kcal100g: parseFloat(document.getElementById('input-kcal100g').value) || 0,
       prix: parseFloat(document.getElementById('input-prix').value) || 0,
       fournisseur: document.getElementById('input-fournisseur').value,
-      conditionnement: document.getElementById('input-conditionnement').value
+      conditionnement: document.getElementById('input-conditionnement').value,
+      unite: document.getElementById('input-unite').value,
+      poidsParUnite: parseFloat(document.getElementById('input-poids-unite').value) || 0
     };
 
     try {
@@ -746,12 +891,12 @@ class AlimentsPage {
 
   getDemoIngredients() {
     return [
-      { id: 1, categorie: 'Fruits', reference: 'FRU01', intitule: 'Pomme', kcal100g: 52, fournisseur: 'Bio Market', prix: 2.50 },
-      { id: 2, categorie: 'Fruits', reference: 'FRU02', intitule: 'Banane', kcal100g: 89, fournisseur: 'Primeur Local', prix: 1.80 },
-      { id: 3, categorie: 'Légumes', reference: 'LEG01', intitule: 'Carotte', kcal100g: 41, fournisseur: 'Bio Market', prix: 1.20 },
-      { id: 4, categorie: 'Légumes', reference: 'LEG02', intitule: 'Tomate', kcal100g: 18, fournisseur: 'Jardin Direct', prix: 3.00 },
-      { id: 5, categorie: 'Viandes', reference: 'VIA01', intitule: 'Poulet', kcal100g: 165, fournisseur: 'Boucherie Martin', prix: 8.90 },
-      { id: 6, categorie: 'Produits laitiers', reference: 'LAI01', intitule: 'Yaourt nature', kcal100g: 61, fournisseur: 'Laiterie Locale', prix: 0.50 }
+      { id: 1, categorie: 'Fruits', reference: '0001', intitule: 'Pomme', kcal100g: 52, fournisseur: 'Bio Market', prix: 2.50, unite: 'kg', poidsParUnite: 1000 },
+      { id: 2, categorie: 'Fruits', reference: '0002', intitule: 'Banane', kcal100g: 89, fournisseur: 'Primeur Local', prix: 1.80, unite: 'kg', poidsParUnite: 1000 },
+      { id: 3, categorie: 'Légumes', reference: '0003', intitule: 'Carotte', kcal100g: 41, fournisseur: 'Bio Market', prix: 1.20, unite: 'kg', poidsParUnite: 1000 },
+      { id: 4, categorie: 'Légumes', reference: '0004', intitule: 'Tomate', kcal100g: 18, fournisseur: 'Jardin Direct', prix: 3.00, unite: 'kg', poidsParUnite: 1000 },
+      { id: 5, categorie: 'Viandes', reference: '0005', intitule: 'Poulet', kcal100g: 165, fournisseur: 'Boucherie Martin', prix: 8.90, unite: 'kg', poidsParUnite: 1000 },
+      { id: 6, categorie: 'Produits laitiers', reference: '0006', intitule: 'Yaourt nature', kcal100g: 61, fournisseur: 'Laiterie Locale', prix: 0.50, unite: 'pot', poidsParUnite: 125 }
     ];
   }
 }
