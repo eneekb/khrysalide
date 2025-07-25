@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT - Khrysalide
 
-## 🎯 Version actuelle : 1.1.0
+## 🎯 Version actuelle : 1.1.1
 
 ### Règles de versioning
 - **TOUJOURS** incrémenter la version à chaque modification
@@ -312,11 +312,17 @@ git push origin main
 6. **Versioning** : TOUJOURS incrémenter la version à chaque modification
 
 ---
-*Dernière mise à jour : 24/07/2025 - v1.1.0*
+*Dernière mise à jour : 24/07/2025 - v1.1.1*
 
 ## 📋 Historique des versions
 
 _Note : Système de versioning ajouté à partir de v1.0.1_
+
+### v1.1.1 (24/07/2025)
+- UI: Boutons principaux en corail (cohérence visuelle)
+- UI: Réduction des marges (cards et pages) pour moins de scroll
+- UI: Slogan de login plus petit (tient sur une ligne)
+- UI: Inversion primary/secondary buttons colors
 
 ### v1.1.0 (24/07/2025)
 - Feat: Authentification Google OAuth 2.0 complète
