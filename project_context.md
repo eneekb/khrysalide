@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT - Khrysalide
 
-## 🎯 Version actuelle : 1.0.3
+## 🎯 Version actuelle : 1.1.0
 
 ### Règles de versioning
 - **TOUJOURS** incrémenter la version à chaque modification
@@ -40,6 +40,7 @@ khrysalide/
 │   └── utils.js       # Fonctions utilitaires communes
 ├── pages/
 │   ├── dashboard.js   # Page d'accueil / tableau de bord
+│   ├── login.js       # Page de connexion
 │   ├── journal.js     # Gestion du journal alimentaire
 │   ├── aliments.js    # Liste et gestion des ingrédients
 │   ├── recettes.js    # Consultation des recettes
@@ -63,6 +64,7 @@ export async function signOut()                     // Déconnexion
 export function isAuthenticated()                   // Retourne true/false
 export function getAccessToken()                    // Retourne le token actuel
 export function getCurrentUser()                    // Retourne {email, name, picture}
+export function onAuthChange(callback)              // Écoute les changements d'auth
 ```
 
 ### 📊 sheets-api.js
@@ -262,10 +264,11 @@ export class ExempleComponent {
 - styles.css avec tous les composants UI
 - app.js (coordinateur principal)
 - router.js (navigation SPA)
+- auth.js (authentification Google OAuth 2.0)
 - pages/dashboard.js (page d'accueil)
+- pages/login.js (page de connexion)
 
 ### 🚧 En cours
-- [ ] Système d'authentification (auth.js)
 - [ ] API Google Sheets (sheets-api.js)
 
 ### 📋 À faire
@@ -309,11 +312,17 @@ git push origin main
 6. **Versioning** : TOUJOURS incrémenter la version à chaque modification
 
 ---
-*Dernière mise à jour : 24/07/2025 - v1.0.3*
+*Dernière mise à jour : 24/07/2025 - v1.1.0*
 
 ## 📋 Historique des versions
 
 _Note : Système de versioning ajouté à partir de v1.0.1_
+
+### v1.1.0 (24/07/2025)
+- Feat: Authentification Google OAuth 2.0 complète
+- Feat: Page de connexion avec design moderne
+- Feat: Gestion des sessions et redirections
+- Update: Mode démo uniquement si Auth non disponible
 
 ### v1.0.3 (24/07/2025)
 - Fix: Conflit entre les deux logiques de splash screen
