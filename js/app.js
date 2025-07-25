@@ -1,14 +1,13 @@
 /**
  * app.js - Point d'entrée et coordinateur principal de Khrysalide
  * Initialise et coordonne tous les modules
- * Version: 1.0.3
+ * Version: 1.1.0
  */
-
 
 // Configuration globale de l'application
 const APP_CONFIG = {
   name: 'Khrysalide',
-  version: '1.0.3',
+  version: '1.1.0',
   debug: true, // Mode debug pour le développement
   api: {
     spreadsheetId: '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY',
@@ -72,13 +71,13 @@ class KhrysalideApp {
   async loadModules() {
     // Vérifie la présence des modules
     const requiredModules = ['Router', 'Auth'];
-    const missingModules = requiredModules.filter(m => !window[m]);
+    const availableModules = requiredModules.filter(m => window[m]);
     
-    if (missingModules.length > 0) {
-      this.log('⚠️ Modules manquants:', missingModules);
-      this.log('📦 Chargement en mode démo');
-      
-      // Mode démo si modules manquants
+    this.log('📦 Modules disponibles:', availableModules);
+    
+    // Si Auth n'est pas disponible, mode démo
+    if (!window.Auth) {
+      this.log('⚠️ Module Auth manquant, mode démo activé');
       this.state.isAuthenticated = true;
       this.state.user = {
         email: 'demo@khrysalide.app',
@@ -107,8 +106,12 @@ class KhrysalideApp {
           this.state.isAuthenticated = isAuth;
           this.state.user = user;
           
-          if (!isAuth) {
+          if (!isAuth && this.state.currentPage !== 'login') {
+            // Redirige vers login si déconnecté
             this.modules.router?.navigateTo('login');
+          } else if (isAuth && this.state.currentPage === 'login') {
+            // Redirige vers dashboard si connecté
+            this.modules.router?.navigateTo('dashboard');
           }
         });
         
