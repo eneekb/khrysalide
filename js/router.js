@@ -1,7 +1,7 @@
 /**
  * router.js - Gestionnaire de navigation SPA pour Khrysalide
  * Gère les routes, l'historique et le chargement des pages
- * Version: 1.2.1
+ * Version: 1.3.2
  */
 
 class Router {
@@ -9,6 +9,7 @@ class Router {
     this.app = app;
     this.pages = new Map();
     this.currentPage = null;
+    this.currentPageInstance = null; // Ajout pour stocker l'instance de page
     this.defaultPage = 'dashboard';
     this.container = null;
     this.navigation = null;
@@ -249,20 +250,22 @@ class Router {
       if (page.component) {
         // Utilise le composant de page s'il existe
         const instance = new page.component(this.app);
+        this.currentPageInstance = instance; // Stocke l'instance
         if (instance.init) await instance.init();
         content = instance.render();
+        
+        // Affiche le contenu
+        pageContainer.innerHTML = content;
+        
+        // Attache les événements
+        if (instance.attachEvents) {
+          instance.attachEvents();
+        }
       } else {
         // Sinon affiche un placeholder
+        this.currentPageInstance = null;
         content = this.renderPlaceholder(page);
-      }
-      
-      // Affiche le contenu
-      pageContainer.innerHTML = content;
-      
-      // Attache les événements si nécessaire
-      if (page.component && page.component.prototype.attachEvents) {
-        const instance = new page.component(this.app);
-        instance.attachEvents();
+        pageContainer.innerHTML = content;
       }
       
     } catch (error) {
