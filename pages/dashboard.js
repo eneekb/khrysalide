@@ -1,7 +1,7 @@
 /**
  * dashboard.js - Page d'accueil / tableau de bord de Khrysalide
  * Affiche le résumé du jour, les actions rapides et les stats
- * Version: 1.0.1
+ * Version: 1.1.1
  */
 
 class DashboardPage {
@@ -275,7 +275,7 @@ class DashboardPage {
 const dashboardStyles = `
 <style>
   .dashboard-page {
-    padding-top: calc(var(--spacing-lg) + env(safe-area-inset-top));
+    padding-top: calc(var(--spacing-md) + env(safe-area-inset-top));
   }
   
   .dashboard-header {
