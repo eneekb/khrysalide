@@ -1,7 +1,13 @@
 /**
  * auth.js - Gestion de l'authentification Google OAuth 2.0
  * Utilise Google Identity Services pour la connexion
- * Version: 1.1.0
+ * Version: 1.2.0
+ * 
+ * Fonctionnalités :
+ * - Connexion/déconnexion avec Google
+ * - Session persistante pendant 1 heure
+ * - Reconnexion silencieuse automatique
+ * - Rafraîchissement du token avant expiration
  */
 
 class Auth {
@@ -12,6 +18,7 @@ class Auth {
     this.tokenClient = null;
     this.isInitialized = false;
     this.authChangeCallbacks = [];
+    this.refreshTimer = null;
     
     // Configuration OAuth
     this.config = {
@@ -100,17 +107,47 @@ class Auth {
    * Vérifie si l'utilisateur était déjà connecté
    */
   checkStoredAuth() {
-    // Pour la sécurité, on ne stocke pas le token
-    // L'utilisateur devra se reconnecter à chaque session
-    // On pourrait utiliser sessionStorage pour une persistance temporaire
-    const storedUser = sessionStorage.getItem('khrysalide_user');
-    if (storedUser) {
+    // Vérifie si on a une session valide
+    const sessionData = sessionStorage.getItem('khrysalide_session');
+    if (sessionData) {
       try {
-        this.user = JSON.parse(storedUser);
-        console.log('👤 Utilisateur récupéré:', this.user.email);
+        const session = JSON.parse(sessionData);
+        const now = Date.now();
+        
+        // Vérifie si la session n'a pas expiré (1 heure)
+        if (session.expiresAt && session.expiresAt > now) {
+          this.user = session.user;
+          console.log('👤 Session valide pour:', this.user.email);
+          
+          // Tente une reconnexion silencieuse
+          this.attemptSilentSignIn();
+          return;
+        } else {
+          console.log('⏰ Session expirée');
+          sessionStorage.removeItem('khrysalide_session');
+        }
       } catch (error) {
-        console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+        console.error('Erreur lors de la récupération de la session:', error);
       }
+    }
+  }
+
+  /**
+   * Tente une reconnexion silencieuse
+   */
+  async attemptSilentSignIn() {
+    try {
+      console.log('🔄 Tentative de reconnexion silencieuse...');
+      
+      // Demande un token sans prompt (connexion silencieuse)
+      this.tokenClient.requestAccessToken({ 
+        prompt: '' // Pas de prompt = silencieux
+      });
+      
+    } catch (error) {
+      console.log('Reconnexion silencieuse échouée, connexion manuelle requise');
+      this.user = null;
+      sessionStorage.removeItem('khrysalide_session');
     }
   }
 
@@ -133,11 +170,37 @@ class Auth {
   }
 
   /**
+   * Programme le rafraîchissement automatique du token
+   */
+  scheduleTokenRefresh() {
+    // Le token Google expire après 1 heure
+    // On le rafraîchit 5 minutes avant expiration
+    const refreshDelay = 55 * 60 * 1000; // 55 minutes
+    
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+    }
+    
+    this.refreshTimer = setTimeout(() => {
+      console.log('🔄 Rafraîchissement automatique du token...');
+      this.attemptSilentSignIn();
+    }, refreshDelay);
+  }
+
+  /**
    * Gère la réponse d'authentification
    */
   async handleAuthResponse(response) {
     if (response.error) {
       console.error('Erreur d\'authentification:', response);
+      
+      // Si c'est une erreur de reconnexion silencieuse, on ne notifie pas
+      if (response.error === 'user_logged_out') {
+        console.log('Utilisateur non connecté, connexion manuelle requise');
+        sessionStorage.removeItem('khrysalide_session');
+        this.user = null;
+      }
+      
       this.notifyAuthChange(false, null);
       return;
     }
@@ -152,12 +215,24 @@ class Auth {
       // Récupère les informations de l'utilisateur
       await this.getUserInfo();
       
+      // Sauvegarde la session avec expiration (1 heure)
+      const sessionData = {
+        user: this.user,
+        expiresAt: Date.now() + (60 * 60 * 1000) // 1 heure
+      };
+      sessionStorage.setItem('khrysalide_session', JSON.stringify(sessionData));
+      
       // Notifie les listeners
       this.notifyAuthChange(true, this.user);
       
-      // Message de succès
-      if (window.app?.showToast) {
-        window.app.showToast(`Bienvenue ${this.user.name} !`, 'success');
+      // Programme le rafraîchissement automatique
+      this.scheduleTokenRefresh();
+      
+      // Message de succès seulement si c'est une nouvelle connexion
+      if (response.prompt !== '') {
+        if (window.app?.showToast) {
+          window.app.showToast(`Bienvenue ${this.user.name} !`, 'success');
+        }
       }
       
     } catch (error) {
@@ -190,9 +265,6 @@ class Auth {
       givenName: userInfo.given_name,
       familyName: userInfo.family_name
     };
-
-    // Sauvegarde temporaire (session uniquement)
-    sessionStorage.setItem('khrysalide_user', JSON.stringify(this.user));
     
     console.log('✅ Utilisateur connecté:', this.user.email);
   }
@@ -201,6 +273,12 @@ class Auth {
    * Déconnexion
    */
   signOut() {
+    // Annule le rafraîchissement automatique
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+    
     // Révoque le token
     if (this.accessToken) {
       google.accounts.oauth2.revoke(this.accessToken, () => {
@@ -212,7 +290,7 @@ class Auth {
     this.accessToken = null;
     this.user = null;
     gapi.client.setToken(null);
-    sessionStorage.removeItem('khrysalide_user');
+    sessionStorage.removeItem('khrysalide_session');
     
     // Notifie les listeners
     this.notifyAuthChange(false, null);
@@ -282,8 +360,14 @@ class Auth {
   }
 
   /**
-   * Helper pour les appels API authentifiés
+   * Annule le rafraîchissement automatique lors de la déconnexion
    */
+  cancelTokenRefresh() {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
   async makeAuthenticatedRequest(url, options = {}) {
     if (!this.isAuthenticated()) {
       throw new Error('Non authentifié');
