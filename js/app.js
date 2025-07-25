@@ -1,13 +1,13 @@
 /**
  * app.js - Point d'entrée et coordinateur principal de Khrysalide
  * Initialise et coordonne tous les modules
- * Version: 1.1.2
+ * Version: 1.2.0
  */
 
 // Configuration globale de l'application
 const APP_CONFIG = {
   name: 'Khrysalide',
-  version: '1.1.2',
+  version: '1.2.0',
   debug: true, // Mode debug pour le développement
   api: {
     spreadsheetId: '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY',
@@ -53,6 +53,9 @@ class KhrysalideApp {
       
       // Initialise le routeur
       await this.initRouter();
+      
+      // Initialise Sheets API
+      await this.initSheetsAPI();
       
       // Cache le splash screen
       this.hideSplashScreen();
@@ -144,6 +147,22 @@ class KhrysalideApp {
           </div>
         </div>
       `;
+    }
+  }
+
+  /**
+   * Initialise Sheets API
+   */
+  async initSheetsAPI() {
+    if (window.SheetsAPI) {
+      try {
+        this.modules.sheets = window.SheetsAPI;
+        await this.modules.sheets.init();
+        this.log('✅ Sheets API initialisée');
+      } catch (error) {
+        this.log('⚠️ Erreur Sheets API:', error);
+        // L'app peut continuer sans Sheets API en mode démo
+      }
     }
   }
 
