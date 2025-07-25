@@ -1,7 +1,7 @@
 /**
  * aliments.js - Page de consultation et recherche des aliments
  * Affiche la liste des ingrédients avec recherche et filtres
- * Version: 1.3.0
+ * Version: 1.3.2
  */
 
 class AlimentsPage {
@@ -12,6 +12,7 @@ class AlimentsPage {
     this.searchQuery = '';
     this.selectedCategory = 'all';
     this.categories = new Set();
+    this.currentIngredient = null;
   }
 
   async init() {
@@ -47,6 +48,7 @@ class AlimentsPage {
       console.error('Erreur lors du chargement:', error);
       // Données de démonstration en cas d'erreur
       this.ingredients = this.getDemoIngredients();
+      this.categories = new Set(['all', 'Fruits', 'Légumes', 'Viandes', 'Produits laitiers']);
     }
   }
 
@@ -63,7 +65,7 @@ class AlimentsPage {
       if (query) {
         return ing.intitule.toLowerCase().includes(query) ||
                ing.categorie.toLowerCase().includes(query) ||
-               ing.reference.toLowerCase().includes(query);
+               ing.fournisseur.toLowerCase().includes(query);
       }
       
       return true;
@@ -83,7 +85,12 @@ class AlimentsPage {
       <div class="page aliments-page">
         <!-- Header avec recherche -->
         <div class="search-header">
-          <h1 class="page-title">Aliments</h1>
+          <div class="header-row">
+            <h1 class="page-title">Aliments</h1>
+            <button class="btn-add" id="add-ingredient">
+              <span class="btn-icon">➕</span>
+            </button>
+          </div>
           
           <div class="search-container">
             <input 
@@ -96,9 +103,16 @@ class AlimentsPage {
             <i class="search-icon">🔍</i>
           </div>
           
-          <!-- Filtres par catégorie -->
-          <div class="category-filters">
-            ${this.renderCategoryFilters()}
+          <!-- Filtre par catégorie (menu déroulant) -->
+          <div class="category-filter-container">
+            <select class="category-select" id="category-filter">
+              <option value="all">Toutes les catégories</option>
+              ${Array.from(this.categories).filter(cat => cat !== 'all').map(cat => `
+                <option value="${cat}" ${this.selectedCategory === cat ? 'selected' : ''}>
+                  ${cat}
+                </option>
+              `).join('')}
+            </select>
           </div>
         </div>
 
@@ -110,6 +124,19 @@ class AlimentsPage {
         <!-- Liste des aliments -->
         <div class="aliments-list">
           ${this.renderIngredientsList()}
+        </div>
+      </div>
+
+      <!-- Modal pour les détails/édition -->
+      <div class="modal" id="ingredient-modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">Détails de l'aliment</h2>
+            <button class="modal-close" id="modal-close">✕</button>
+          </div>
+          <div class="modal-body" id="modal-body">
+            <!-- Le contenu sera injecté dynamiquement -->
+          </div>
         </div>
       </div>
 
@@ -127,11 +154,37 @@ class AlimentsPage {
           border-bottom: 1px solid #f0f0f0;
         }
 
+        .header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
         .page-title {
           font-size: 24px;
           font-weight: 600;
           color: #333;
-          margin: 0 0 12px 0;
+          margin: 0;
+        }
+
+        .btn-add {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: var(--color-mint);
+          color: white;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 8px rgba(82, 209, 179, 0.3);
+        }
+
+        .btn-add:active {
+          transform: scale(0.95);
         }
 
         .search-container {
@@ -163,33 +216,23 @@ class AlimentsPage {
           pointer-events: none;
         }
 
-        .category-filters {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          padding: 4px 0;
-          -webkit-overflow-scrolling: touch;
+        .category-filter-container {
+          margin-bottom: 4px;
         }
 
-        .category-filters::-webkit-scrollbar {
-          display: none;
-        }
-
-        .category-filter {
-          padding: 6px 14px;
+        .category-select {
+          width: 100%;
+          padding: 10px 16px;
+          border: 2px solid #eee;
           border-radius: 20px;
-          font-size: 14px;
-          white-space: nowrap;
+          font-size: 15px;
+          background: white;
           cursor: pointer;
           transition: all 0.3s ease;
-          background: #f5f5f5;
-          color: #666;
-          border: 2px solid transparent;
         }
 
-        .category-filter.active {
-          background: var(--color-mint);
-          color: white;
+        .category-select:focus {
+          outline: none;
           border-color: var(--color-mint);
         }
 
@@ -208,12 +251,13 @@ class AlimentsPage {
           background: white;
           border-radius: 16px;
           padding: 12px 16px;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
           transition: all 0.3s ease;
           display: flex;
           justify-content: space-between;
           align-items: center;
+          cursor: pointer;
         }
 
         .ingredient-card:active {
@@ -222,51 +266,38 @@ class AlimentsPage {
 
         .ingredient-info {
           flex: 1;
+          min-width: 0;
         }
 
         .ingredient-name {
           font-weight: 500;
           color: #333;
-          margin-bottom: 4px;
           font-size: 16px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .ingredient-details {
-          font-size: 13px;
-          color: #666;
-          display: flex;
-          gap: 12px;
-          align-items: center;
-        }
-
-        .ingredient-category {
-          background: #f0f0f0;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 11px;
-        }
-
-        .ingredient-ref {
-          font-size: 11px;
+          font-size: 12px;
           color: #999;
+          margin-top: 2px;
+          display: flex;
+          gap: 8px;
+        }
+
+        .ingredient-price {
+          color: var(--color-coral);
         }
 
         .ingredient-kcal {
           background: var(--color-peach);
           color: var(--color-coral);
-          padding: 8px 12px;
+          padding: 6px 10px;
           border-radius: 12px;
           font-weight: 600;
           font-size: 14px;
-          text-align: center;
-          min-width: 80px;
-        }
-
-        .ingredient-kcal small {
-          display: block;
-          font-weight: 400;
-          font-size: 11px;
-          opacity: 0.8;
+          white-space: nowrap;
         }
 
         .empty-state {
@@ -285,42 +316,143 @@ class AlimentsPage {
           font-size: 16px;
         }
 
-        .category-header {
-          font-size: 14px;
-          font-weight: 600;
-          color: #666;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin: 20px 0 10px 5px;
-          padding-top: 10px;
+        /* Modal */
+        .modal {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 1000;
+          padding: 20px;
+          overflow-y: auto;
         }
 
-        .category-header:first-child {
-          margin-top: 0;
-          padding-top: 0;
+        .modal.show {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 400px;
+          max-height: 90vh;
+          overflow-y: auto;
+          animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+          from {
+            transform: translateY(100px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+          font-size: 20px;
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 24px;
+          color: #999;
+          cursor: pointer;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+        }
+
+        .modal-body {
+          padding: 20px;
+        }
+
+        .form-group {
+          margin-bottom: 16px;
+        }
+
+        .form-label {
+          display: block;
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 6px;
+        }
+
+        .form-input {
+          width: 100%;
+          padding: 10px 14px;
+          border: 2px solid #eee;
+          border-radius: 12px;
+          font-size: 15px;
+          transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+          outline: none;
+          border-color: var(--color-mint);
+        }
+
+        .form-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 24px;
+        }
+
+        .modal-actions .btn {
+          flex: 1;
+        }
+
+        .info-group {
+          background: #f8f8f8;
+          padding: 12px;
+          border-radius: 12px;
+          margin-bottom: 12px;
+        }
+
+        .info-label {
+          font-size: 12px;
+          color: #666;
+          margin-bottom: 2px;
+        }
+
+        .info-value {
+          font-size: 16px;
+          font-weight: 500;
+          color: #333;
+        }
+
+        .info-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
         }
       </style>
     `;
-  }
-
-  renderCategoryFilters() {
-    const filters = [];
-    
-    for (const category of this.categories) {
-      const isActive = this.selectedCategory === category;
-      const label = category === 'all' ? 'Tous' : category;
-      
-      filters.push(`
-        <button 
-          class="category-filter ${isActive ? 'active' : ''}"
-          data-category="${category}"
-        >
-          ${label}
-        </button>
-      `);
-    }
-    
-    return filters.join('');
   }
 
   renderIngredientsList() {
@@ -335,34 +467,20 @@ class AlimentsPage {
       `;
     }
 
-    let html = '';
-    let currentCategory = '';
-    
-    this.filteredIngredients.forEach(ing => {
-      // Affiche un header pour chaque nouvelle catégorie
-      if (ing.categorie !== currentCategory && this.selectedCategory === 'all') {
-        currentCategory = ing.categorie;
-        html += `<div class="category-header">${currentCategory || 'Sans catégorie'}</div>`;
-      }
-      
-      html += `
-        <div class="ingredient-card" data-ref="${ing.reference}">
-          <div class="ingredient-info">
-            <div class="ingredient-name">${ing.intitule}</div>
-            <div class="ingredient-details">
-              ${this.selectedCategory === 'all' ? `<span class="ingredient-category">${ing.categorie}</span>` : ''}
-              <span class="ingredient-ref">${ing.reference}</span>
-            </div>
-          </div>
-          <div class="ingredient-kcal">
-            ${Math.round(ing.kcal100g)}
-            <small>kcal/100g</small>
+    return this.filteredIngredients.map(ing => `
+      <div class="ingredient-card" data-id="${ing.id}">
+        <div class="ingredient-info">
+          <div class="ingredient-name">${ing.intitule}</div>
+          <div class="ingredient-details">
+            ${ing.fournisseur ? `<span>${ing.fournisseur}</span>` : ''}
+            ${ing.prix ? `<span class="ingredient-price">${ing.prix.toFixed(2)}€</span>` : ''}
           </div>
         </div>
-      `;
-    });
-    
-    return html;
+        <div class="ingredient-kcal">
+          ${Math.round(ing.kcal100g)} kcal
+        </div>
+      </div>
+    `).join('');
   }
 
   attachEvents() {
@@ -376,21 +494,51 @@ class AlimentsPage {
       });
     }
 
-    // Filtres de catégorie
-    document.querySelectorAll('.category-filter').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        this.selectedCategory = e.target.dataset.category;
+    // Filtre de catégorie
+    const categorySelect = document.getElementById('category-filter');
+    if (categorySelect) {
+      categorySelect.addEventListener('change', (e) => {
+        this.selectedCategory = e.target.value;
         this.filterIngredients();
-        this.updateUI();
+        this.updateIngredientsList();
       });
-    });
+    }
 
-    // Click sur un ingrédient (pour une future fonctionnalité)
+    // Bouton ajouter
+    const addBtn = document.getElementById('add-ingredient');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        this.showIngredientModal(null);
+      });
+    }
+
+    // Click sur un ingrédient
+    this.attachIngredientEvents();
+
+    // Modal
+    const modalClose = document.getElementById('modal-close');
+    if (modalClose) {
+      modalClose.addEventListener('click', () => this.hideModal());
+    }
+
+    const modal = document.getElementById('ingredient-modal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          this.hideModal();
+        }
+      });
+    }
+  }
+
+  attachIngredientEvents() {
     document.querySelectorAll('.ingredient-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        const ref = card.dataset.ref;
-        console.log('Ingrédient sélectionné:', ref);
-        // TODO: Ouvrir un modal ou naviguer vers le journal avec cet ingrédient
+      card.addEventListener('click', () => {
+        const id = parseInt(card.dataset.id);
+        const ingredient = this.ingredients.find(ing => ing.id === id);
+        if (ingredient) {
+          this.showIngredientModal(ingredient);
+        }
       });
     });
   }
@@ -399,14 +547,8 @@ class AlimentsPage {
     const listContainer = document.querySelector('.aliments-list');
     if (listContainer) {
       listContainer.innerHTML = this.renderIngredientsList();
-      
       // Réattache les événements sur les nouvelles cartes
-      document.querySelectorAll('.ingredient-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-          const ref = card.dataset.ref;
-          console.log('Ingrédient sélectionné:', ref);
-        });
-      });
+      this.attachIngredientEvents();
     }
 
     // Met à jour le compteur
@@ -416,24 +558,200 @@ class AlimentsPage {
     }
   }
 
-  updateUI() {
-    // Met à jour les filtres actifs
-    document.querySelectorAll('.category-filter').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.category === this.selectedCategory);
-    });
+  showIngredientModal(ingredient) {
+    this.currentIngredient = ingredient;
+    const modal = document.getElementById('ingredient-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+
+    modalTitle.textContent = ingredient ? 'Modifier l\'aliment' : 'Nouvel aliment';
+
+    if (ingredient) {
+      // Mode visualisation/édition
+      modalBody.innerHTML = `
+        <div id="view-mode">
+          <div class="info-group">
+            <div class="info-label">Nom</div>
+            <div class="info-value">${ingredient.intitule}</div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-group">
+              <div class="info-label">Catégorie</div>
+              <div class="info-value">${ingredient.categorie || '-'}</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Référence</div>
+              <div class="info-value">${ingredient.reference || '-'}</div>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-group">
+              <div class="info-label">Calories/100g</div>
+              <div class="info-value">${Math.round(ingredient.kcal100g)} kcal</div>
+            </div>
+            <div class="info-group">
+              <div class="info-label">Prix</div>
+              <div class="info-value">${ingredient.prix ? ingredient.prix.toFixed(2) + '€' : '-'}</div>
+            </div>
+          </div>
+
+          <div class="info-group">
+            <div class="info-label">Fournisseur</div>
+            <div class="info-value">${ingredient.fournisseur || '-'}</div>
+          </div>
+
+          <div class="info-group">
+            <div class="info-label">Conditionnement</div>
+            <div class="info-value">${ingredient.conditionnement || '-'}</div>
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn btn-primary" onclick="app.modules.router.currentPageInstance.editIngredient()">
+              Modifier
+            </button>
+            <button class="btn btn-secondary" onclick="app.modules.router.currentPageInstance.hideModal()">
+              Fermer
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      // Mode création
+      this.showEditForm(null);
+    }
+
+    modal.classList.add('show');
+  }
+
+  editIngredient() {
+    if (this.currentIngredient) {
+      this.showEditForm(this.currentIngredient);
+    }
+  }
+
+  showEditForm(ingredient) {
+    const modalBody = document.getElementById('modal-body');
     
-    // Met à jour la liste
-    this.updateIngredientsList();
+    modalBody.innerHTML = `
+      <form id="ingredient-form">
+        <div class="form-group">
+          <label class="form-label">Nom *</label>
+          <input type="text" class="form-input" id="input-intitule" 
+                 value="${ingredient ? ingredient.intitule : ''}" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Catégorie</label>
+            <select class="form-input" id="input-categorie">
+              <option value="">Sélectionner...</option>
+              ${Array.from(this.categories).filter(cat => cat !== 'all').map(cat => `
+                <option value="${cat}" ${ingredient && ingredient.categorie === cat ? 'selected' : ''}>
+                  ${cat}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Référence</label>
+            <input type="text" class="form-input" id="input-reference" 
+                   value="${ingredient ? ingredient.reference : ''}">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Calories/100g *</label>
+            <input type="number" class="form-input" id="input-kcal100g" 
+                   value="${ingredient ? ingredient.kcal100g : ''}" required min="0" step="0.1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prix (€)</label>
+            <input type="number" class="form-input" id="input-prix" 
+                   value="${ingredient ? ingredient.prix : ''}" min="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fournisseur</label>
+          <input type="text" class="form-input" id="input-fournisseur" 
+                 value="${ingredient ? ingredient.fournisseur : ''}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Conditionnement</label>
+          <input type="text" class="form-input" id="input-conditionnement" 
+                 value="${ingredient ? ingredient.conditionnement : ''}">
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">
+            ${ingredient ? 'Enregistrer' : 'Ajouter'}
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="app.modules.router.currentPageInstance.hideModal()">
+            Annuler
+          </button>
+        </div>
+      </form>
+    `;
+
+    // Attache l'événement de soumission
+    const form = document.getElementById('ingredient-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.saveIngredient(ingredient);
+    });
+  }
+
+  async saveIngredient(existingIngredient) {
+    const formData = {
+      intitule: document.getElementById('input-intitule').value,
+      categorie: document.getElementById('input-categorie').value,
+      reference: document.getElementById('input-reference').value,
+      kcal100g: parseFloat(document.getElementById('input-kcal100g').value) || 0,
+      prix: parseFloat(document.getElementById('input-prix').value) || 0,
+      fournisseur: document.getElementById('input-fournisseur').value,
+      conditionnement: document.getElementById('input-conditionnement').value
+    };
+
+    try {
+      if (existingIngredient) {
+        // TODO: Implémenter la mise à jour dans sheets-api.js
+        this.app.showToast('Mise à jour non encore implémentée', 'warning');
+      } else {
+        // Ajouter nouvel ingrédient
+        await this.app.modules.sheets.addIngredient(formData);
+        this.app.showToast('Aliment ajouté avec succès', 'success');
+        
+        // Recharge les données
+        await this.loadIngredients();
+        this.filterIngredients();
+        this.updateIngredientsList();
+      }
+      
+      this.hideModal();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      this.app.showToast('Erreur lors de la sauvegarde', 'error');
+    }
+  }
+
+  hideModal() {
+    const modal = document.getElementById('ingredient-modal');
+    modal.classList.remove('show');
+    this.currentIngredient = null;
   }
 
   getDemoIngredients() {
     return [
-      { categorie: 'Fruits', reference: 'FRU01', intitule: 'Pomme', kcal100g: 52 },
-      { categorie: 'Fruits', reference: 'FRU02', intitule: 'Banane', kcal100g: 89 },
-      { categorie: 'Légumes', reference: 'LEG01', intitule: 'Carotte', kcal100g: 41 },
-      { categorie: 'Légumes', reference: 'LEG02', intitule: 'Tomate', kcal100g: 18 },
-      { categorie: 'Viandes', reference: 'VIA01', intitule: 'Poulet', kcal100g: 165 },
-      { categorie: 'Produits laitiers', reference: 'LAI01', intitule: 'Yaourt nature', kcal100g: 61 }
+      { id: 1, categorie: 'Fruits', reference: 'FRU01', intitule: 'Pomme', kcal100g: 52, fournisseur: 'Bio Market', prix: 2.50 },
+      { id: 2, categorie: 'Fruits', reference: 'FRU02', intitule: 'Banane', kcal100g: 89, fournisseur: 'Primeur Local', prix: 1.80 },
+      { id: 3, categorie: 'Légumes', reference: 'LEG01', intitule: 'Carotte', kcal100g: 41, fournisseur: 'Bio Market', prix: 1.20 },
+      { id: 4, categorie: 'Légumes', reference: 'LEG02', intitule: 'Tomate', kcal100g: 18, fournisseur: 'Jardin Direct', prix: 3.00 },
+      { id: 5, categorie: 'Viandes', reference: 'VIA01', intitule: 'Poulet', kcal100g: 165, fournisseur: 'Boucherie Martin', prix: 8.90 },
+      { id: 6, categorie: 'Produits laitiers', reference: 'LAI01', intitule: 'Yaourt nature', kcal100g: 61, fournisseur: 'Laiterie Locale', prix: 0.50 }
     ];
   }
 }
