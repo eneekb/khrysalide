@@ -1,13 +1,13 @@
 /**
  * app.js - Point d'entrée et coordinateur principal de Khrysalide
  * Initialise et coordonne tous les modules
- * Version: 1.1.0
+ * Version: 1.1.1
  */
 
 // Configuration globale de l'application
 const APP_CONFIG = {
   name: 'Khrysalide',
-  version: '1.1.0',
+  version: '1.1.1',
   debug: true, // Mode debug pour le développement
   api: {
     spreadsheetId: '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY',
