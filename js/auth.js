@@ -1,7 +1,7 @@
 /**
  * auth.js - Gestion de l'authentification Google OAuth 2.0
  * Utilise Google Identity Services pour la connexion
- * Version: 1.2.0
+ * Version: 1.2.1
  * 
  * Fonctionnalités :
  * - Connexion/déconnexion avec Google
