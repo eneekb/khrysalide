@@ -1,7 +1,7 @@
 /**
  * dashboard.js - Page d'accueil / tableau de bord de Khrysalide
  * Affiche le résumé du jour, les actions rapides et les stats
- * Version: 1.2.0
+ * Version: 1.2.1
  */
 
 class DashboardPage {
@@ -231,10 +231,19 @@ class DashboardPage {
       
       // Test 3: Lire le journal d'aujourd'hui
       const today = new Date().toISOString().split('T')[0];
+      console.log(`📅 Recherche des entrées pour: ${today}`);
+      
       const journal = await window.SheetsAPI.readJournal(today, today);
       console.log('📅 Entrées du jour:', journal.length);
+      if (journal.length > 0) {
+        console.log('Première entrée:', journal[0]);
+      }
       
-      this.app.showToast(`✅ API OK ! ${ingredients.length} ingrédients trouvés`, 'success');
+      // Test 4: Totaux du jour
+      const totals = await window.SheetsAPI.getDayTotals(today);
+      console.log('📊 Totaux du jour:', totals);
+      
+      this.app.showToast(`✅ API OK ! ${ingredients.length} ingrédients, ${journal.length} entrées aujourd'hui`, 'success');
       
     } catch (error) {
       console.error('❌ Erreur API:', error);
