@@ -1,7 +1,7 @@
 /**
  * aliments.js - Page de consultation et recherche des aliments
  * Affiche la liste des ingrédients avec recherche et filtres
- * Version: 1.3.5
+ * Version: 1.3.6
  */
 
 class AlimentsPage {
@@ -22,7 +22,7 @@ class AlimentsPage {
     console.log('🥗 Initialisation de la page Aliments');
     
     try {
-      // Charge les options des menus déroulants
+      // Charge les options des menus déroulants EN PREMIER
       await this.loadMenuOptions();
       
       // Charge les ingrédients depuis Sheets
@@ -45,7 +45,12 @@ class AlimentsPage {
       }
     } catch (error) {
       console.error('Erreur lors du chargement des menus:', error);
-      // Valeurs par défaut déjà définies dans readMenuOptions
+      // Valeurs par défaut
+      this.menuOptions = {
+        categories: ['Fruits', 'Légumes', 'Viandes', 'Produits laitiers'],
+        fournisseurs: ['Bio Market', 'Primeur Local', 'Jardin Direct'],
+        unites: ['g', 'kg', 'L', 'mL', 'pièce', 'pot', 'sachet']
+      };
     }
   }
 
@@ -508,19 +513,6 @@ class AlimentsPage {
           </div>
         </div>
       `;
-      
-      // Attache les événements aux boutons
-      setTimeout(() => {
-        const btnEdit = document.getElementById('btn-edit-ingredient');
-        if (btnEdit) {
-          btnEdit.addEventListener('click', () => this.editIngredient());
-        }
-        
-        const btnClose = document.getElementById('btn-close-view');
-        if (btnClose) {
-          btnClose.addEventListener('click', () => this.hideModal());
-        }
-      }, 0);
     }
 
     return this.filteredIngredients.map(ing => `
@@ -631,7 +623,7 @@ class AlimentsPage {
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
 
-    modalTitle.textContent = ingredient ? 'Modifier l\'aliment' : 'Nouvel aliment';
+    modalTitle.textContent = ingredient ? 'Détails de l\'aliment' : 'Nouvel aliment';
 
     if (ingredient) {
       // Mode visualisation/édition
@@ -700,6 +692,19 @@ class AlimentsPage {
           </div>
         </div>
       `;
+      
+      // Attache les événements aux boutons
+      setTimeout(() => {
+        const btnEdit = document.getElementById('btn-edit-ingredient');
+        if (btnEdit) {
+          btnEdit.addEventListener('click', () => this.editIngredient());
+        }
+        
+        const btnClose = document.getElementById('btn-close-view');
+        if (btnClose) {
+          btnClose.addEventListener('click', () => this.hideModal());
+        }
+      }, 0);
     } else {
       // Mode création - génère une nouvelle référence
       await this.showEditForm(null);
@@ -716,6 +721,10 @@ class AlimentsPage {
 
   async showEditForm(ingredient) {
     const modalBody = document.getElementById('modal-body');
+    const modalTitle = document.getElementById('modal-title');
+    
+    // Change le titre selon le mode
+    modalTitle.textContent = ingredient ? 'Modifier l\'aliment' : 'Nouvel aliment';
     
     // Génère une nouvelle référence si création
     let reference = ingredient ? ingredient.reference : '';
