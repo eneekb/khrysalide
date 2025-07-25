@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT - Khrysalide
 
-## 🎯 Version actuelle : 1.1.1
+## 🎯 Version actuelle : 1.2.1
 
 ### Règles de versioning
 - **TOUJOURS** incrémenter la version à chaque modification
@@ -65,6 +65,8 @@ export function isAuthenticated()                   // Retourne true/false
 export function getAccessToken()                    // Retourne le token actuel
 export function getCurrentUser()                    // Retourne {email, name, picture}
 export function onAuthChange(callback)              // Écoute les changements d'auth
+export function attemptSilentSignIn()               // Reconnexion silencieuse
+export function scheduleTokenRefresh()              // Rafraîchit le token automatiquement
 ```
 
 ### 📊 sheets-api.js
@@ -72,20 +74,29 @@ export function onAuthChange(callback)              // Écoute les changements d
 // Interface avec Google Sheets API
 const SPREADSHEET_ID = '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY'
 
-// Lecture
-export async function readIngredients()             // Retourne [{categorie, reference, intitule, kcal100g, ...}]
-export async function readRecipes()                 // Retourne [{numero, intitule, portion, kcalTotal, ingredients: [...]}]
-export async function readJournal(startDate, endDate) // Retourne les entrées du journal
-export async function readProfile()                 // Retourne {objectifKcal, dateDebut, ...}
+// Méthodes génériques
+export async function init()                        // Initialise l'API
+export async function readRange(sheet, range)       // Lit une plage
+export async function writeRange(sheet, range, values) // Écrit dans une plage
+export async function appendRows(sheet, values)     // Ajoute des lignes
 
-// Écriture
+// Méthodes spécifiques
+export async function readIngredients()             // Retourne [{categorie, reference, intitule, kcal100g, ...}]
 export async function addIngredient(ingredient)     // Ajoute un ingrédient
+export async function searchIngredients(query)      // Recherche par nom
+
+export async function readRecipes()                 // Retourne [{numero, intitule, portion, kcalTotal, ingredients: [...]}]
+
+export async function readJournal(startDate, endDate) // Retourne les entrées du journal
 export async function addJournalEntry(entry)       // {date, repas, type, reference, quantite, kcal}
+export async function deleteJournalEntry(rowId)     // Supprime une entrée
+export async function getDayTotals(date)           // Calcule les totaux du jour
+
+export async function readProfile()                 // Retourne {objectifKcal, dateDebut, ...}
 export async function updateProfile(profile)        // Met à jour le profil utilisateur
-export async function deleteJournalEntry(row)      // Supprime une entrée du journal
 
 // Utilitaires
-export async function batchUpdate(updates)         // Écriture par batch pour optimiser
+export async function batchRead(requests)           // Lecture par batch pour optimiser
 ```
 
 ### 💾 storage.js
@@ -265,11 +276,12 @@ export class ExempleComponent {
 - app.js (coordinateur principal)
 - router.js (navigation SPA)
 - auth.js (authentification Google OAuth 2.0)
-- pages/dashboard.js (page d'accueil)
+- sheets-api.js (API Google Sheets complète)
+- pages/dashboard.js (page d'accueil avec vraies données)
 - pages/login.js (page de connexion)
 
 ### 🚧 En cours
-- [ ] API Google Sheets (sheets-api.js)
+- [ ] pages/aliments.js (liste des ingrédients)
 
 ### 📋 À faire
 - [ ] Page Dashboard
@@ -308,15 +320,40 @@ git push origin main
 2. **Performance** : Limiter les appels API (cache agressif)
 3. **UX** : Messages encourageants, animations douces
 4. **Sécurité** : Token en mémoire uniquement, pas de localStorage
-5. **Offline** : L'app doit rester utilisable sans connexion
-6. **Versioning** : TOUJOURS incrémenter la version à chaque modification
+5. **Session** : Connexion persistante pendant 1h avec refresh automatique
+6. **Dates** : Format français DD/MM/YYYY dans Sheets, conversion auto en ISO
+7. **Offline** : L'app doit rester utilisable sans connexion
+8. **Versioning** : TOUJOURS incrémenter la version à chaque modification
 
 ---
-*Dernière mise à jour : 24/07/2025 - v1.1.1*
+*Dernière mise à jour : 24/07/2025 - v1.2.1*
 
 ## 📋 Historique des versions
 
 _Note : Système de versioning ajouté à partir de v1.0.1_
+
+### v1.2.1 (24/07/2025)
+- Fix: Support du format de date français DD/MM/YYYY
+- Fix: Conversion automatique entre formats français et ISO
+- Feat: Test API amélioré avec affichage des totaux
+
+### v1.2.0 (24/07/2025)
+- Feat: API Google Sheets complète (sheets-api.js)
+- Feat: Lecture/écriture dans toutes les feuilles
+- Feat: Dashboard avec vraies données depuis Sheets
+- Feat: Calcul automatique des totaux et moyennes
+- Feat: Recherche d'ingrédients et gestion du profil
+
+### v1.1.3 (24/07/2025)
+- Feat: Session persistante pendant 1 heure
+- Feat: Reconnexion silencieuse automatique
+- Feat: Rafraîchissement automatique du token avant expiration
+- Fix: Meilleure gestion des erreurs de reconnexion
+
+### v1.1.2 (24/07/2025)
+- UI: Réorganisation page login - infos sécurité en bas
+- UI: Bouton Google centré et plus de padding
+- UI: Meilleure hiérarchie visuelle de la page login
 
 ### v1.1.1 (24/07/2025)
 - UI: Boutons principaux en corail (cohérence visuelle)
