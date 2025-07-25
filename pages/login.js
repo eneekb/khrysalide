@@ -1,7 +1,7 @@
 /**
  * login.js - Page de connexion à Khrysalide
  * Gère l'authentification avec Google
- * Version: 1.1.2
+ * Version: 1.2.0
  */
 
 class LoginPage {
