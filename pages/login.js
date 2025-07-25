@@ -1,7 +1,7 @@
 /**
  * login.js - Page de connexion à Khrysalide
  * Gère l'authentification avec Google
- * Version: 1.1.0
+ * Version: 1.1.1
  */
 
 class LoginPage {
@@ -29,7 +29,7 @@ class LoginPage {
               <img src="logo.png" alt="Khrysalide">
             </div>
             <h1 class="app-title text-mint">Khrysalide</h1>
-            <p class="login-subtitle">Votre compagnon de suivi nutritionnel</p>
+            <p class="login-subtitle text-small">Votre compagnon de suivi nutritionnel</p>
           </div>
           
           <!-- Section de connexion -->
@@ -37,13 +37,13 @@ class LoginPage {
             <div class="login-card card">
               <h2 class="text-center mb-lg">Bienvenue !</h2>
               
-              <p class="text-center mb-xl">
+              <p class="text-center mb-lg">
                 Connectez-vous pour accéder à votre journal alimentaire 
                 et suivre votre progression.
               </p>
               
               <!-- Bouton de connexion Google -->
-              <button class="btn-google" onclick="loginPage.handleGoogleSignIn()">
+              <button class="btn btn-primary btn-google" onclick="loginPage.handleGoogleSignIn()">
                 <svg class="google-icon" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -54,7 +54,7 @@ class LoginPage {
               </button>
               
               <!-- Informations -->
-              <div class="login-info mt-xl">
+              <div class="login-info mt-lg">
                 <p class="text-small text-center">
                   <span class="info-icon">🔒</span>
                   Vos données sont stockées de manière sécurisée dans votre compte Google Drive
@@ -63,7 +63,7 @@ class LoginPage {
             </div>
             
             <!-- Section avantages -->
-            <div class="features-section mt-xl">
+            <div class="features-section mt-lg">
               <h3 class="text-center mb-lg">Pourquoi Khrysalide ?</h3>
               
               <div class="features-grid">
@@ -172,7 +172,7 @@ const loginStyles = `
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #FAFAFA 0%, #E6FAF5 100%);
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
   }
   
   .login-container {
@@ -182,13 +182,13 @@ const loginStyles = `
   
   .login-header {
     text-align: center;
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
   }
   
   .login-logo {
     width: 100px;
     height: 100px;
-    margin: 0 auto var(--spacing-lg);
+    margin: 0 auto var(--spacing-md);
   }
   
   .login-logo img {
@@ -203,52 +203,31 @@ const loginStyles = `
   }
   
   .login-card {
-    padding: var(--spacing-xl);
+    padding: var(--spacing-lg);
   }
   
-  /* Bouton Google */
+  /* Bouton Google avec style corail */
   .btn-google {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-lg);
-    background-color: white;
-    border: 2px solid #dadce0;
-    border-radius: var(--radius-full);
-    font-family: inherit;
-    font-size: 1rem;
-    font-weight: 500;
-    color: #3c4043;
-    cursor: pointer;
-    transition: all var(--transition-fast);
+    position: relative;
+    padding-left: var(--spacing-2xl);
   }
   
-  .btn-google:hover {
-    background-color: #f8f9fa;
-    border-color: #d2d3d6;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-  
-  .btn-google:active {
-    background-color: #e8eaed;
-    transform: scale(0.98);
-  }
-  
-  .btn-google:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-  
-  .google-icon {
+  .btn-google .google-icon {
+    position: absolute;
+    left: var(--spacing-lg);
+    top: 50%;
+    transform: translateY(-50%);
     width: 20px;
     height: 20px;
   }
   
+  .btn-google:hover .google-icon {
+    filter: brightness(1.1);
+  }
+  
   /* Info section */
   .login-info {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
     background-color: rgba(82, 209, 179, 0.1);
     border-radius: var(--radius-md);
   }
@@ -287,7 +266,7 @@ const loginStyles = `
   
   /* Footer */
   .login-footer {
-    margin-top: var(--spacing-xl);
+    margin-top: var(--spacing-lg);
     padding: 0 var(--spacing-lg);
     color: var(--color-text);
   }
