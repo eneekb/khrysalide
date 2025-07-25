@@ -1,7 +1,7 @@
 /**
  * router.js - Gestionnaire de navigation SPA pour Khrysalide
  * Gère les routes, l'historique et le chargement des pages
- * Version: 1.1.0
+ * Version: 1.2.1
  */
 
 class Router {
