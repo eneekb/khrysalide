@@ -1,7 +1,7 @@
 /**
  * dashboard.js - Page d'accueil / tableau de bord de Khrysalide
  * Affiche le résumé du jour, les actions rapides et les stats
- * Version: 1.1.1
+ * Version: 1.2.0
  */
 
 class DashboardPage {
@@ -36,17 +36,28 @@ class DashboardPage {
    * Charge les données du jour
    */
   async loadTodayData() {
-    // TODO: Charger depuis Google Sheets
-    // Pour l'instant, données de démo
-    this.data.todayCalories = Math.floor(Math.random() * 1500);
-    
-    // Charge depuis localStorage si disponible
-    const saved = localStorage.getItem('khrysalide_today');
-    if (saved) {
-      const savedData = JSON.parse(saved);
-      if (savedData.date === this.getTodayDate()) {
-        this.data.todayCalories = savedData.calories || 0;
+    try {
+      // Charge depuis Google Sheets si disponible
+      if (window.SheetsAPI && window.Auth?.isAuthenticated()) {
+        const today = new Date().toISOString().split('T')[0];
+        const totals = await window.SheetsAPI.getDayTotals(today);
+        this.data.todayCalories = Math.round(totals.total);
+        
+        // Charge aussi le profil pour l'objectif
+        try {
+          const profile = await window.SheetsAPI.readProfile();
+          this.data.targetCalories = profile.objectifKcal || 2000;
+        } catch (error) {
+          console.error('Erreur lors du chargement du profil:', error);
+        }
+      } else {
+        // Mode démo
+        this.data.todayCalories = Math.floor(Math.random() * 1500);
       }
+    } catch (error) {
+      console.error('Erreur lors du chargement des données du jour:', error);
+      // Fallback aux données de démo
+      this.data.todayCalories = 0;
     }
   }
 
@@ -54,9 +65,49 @@ class DashboardPage {
    * Charge les statistiques de la semaine
    */
   async loadWeekStats() {
-    // TODO: Charger depuis Google Sheets
-    this.data.weekAverage = Math.floor(Math.random() * 2000);
-    this.data.weekDays = Math.floor(Math.random() * 7) + 1;
+    try {
+      if (window.SheetsAPI && window.Auth?.isAuthenticated()) {
+        // Calcule les dates de la semaine
+        const today = new Date();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (today.getDay() || 7) + 1);
+        
+        const weekStart = monday.toISOString().split('T')[0];
+        const weekEnd = today.toISOString().split('T')[0];
+        
+        // Charge les entrées de la semaine
+        const weekEntries = await window.SheetsAPI.readJournal(weekStart, weekEnd);
+        
+        // Groupe par jour
+        const dayTotals = {};
+        weekEntries.forEach(entry => {
+          if (!dayTotals[entry.date]) {
+            dayTotals[entry.date] = 0;
+          }
+          dayTotals[entry.date] += entry.kcal;
+        });
+        
+        // Calcule les stats
+        const daysWithData = Object.keys(dayTotals).length;
+        this.data.weekDays = daysWithData;
+        
+        if (daysWithData > 0) {
+          const totalCalories = Object.values(dayTotals).reduce((sum, cal) => sum + cal, 0);
+          this.data.weekAverage = Math.round(totalCalories / daysWithData);
+        } else {
+          this.data.weekAverage = 0;
+        }
+      } else {
+        // Mode démo
+        this.data.weekAverage = Math.floor(Math.random() * 2000);
+        this.data.weekDays = Math.floor(Math.random() * 7) + 1;
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des stats de la semaine:', error);
+      // Fallback aux données de démo
+      this.data.weekAverage = 0;
+      this.data.weekDays = 0;
+    }
   }
 
   /**
@@ -146,8 +197,49 @@ class DashboardPage {
         <div class="motivation-message mt-lg text-center">
           <p class="text-large">✨ ${this.getMotivationalMessage()}</p>
         </div>
+        
+        <!-- Test API (temporaire - à retirer après vérification) -->
+        <div class="api-test mt-lg text-center">
+          <button class="btn btn-outline btn-small" onclick="dashboardPage.testAPI()">
+            🧪 Tester l'API Sheets
+          </button>
+        </div>
       </div>
     `;
+  }
+
+  /**
+   * Test de l'API (temporaire, pour vérifier que tout fonctionne)
+   */
+  async testAPI() {
+    if (!window.SheetsAPI) {
+      this.app.showToast('API Sheets non disponible', 'error');
+      return;
+    }
+    
+    try {
+      this.app.showToast('Test de l\'API en cours...', 'info');
+      
+      // Test 1: Lire les ingrédients
+      const ingredients = await window.SheetsAPI.readIngredients();
+      console.log('📊 Ingrédients trouvés:', ingredients.length);
+      console.log('Premier ingrédient:', ingredients[0]);
+      
+      // Test 2: Lire le profil
+      const profile = await window.SheetsAPI.readProfile();
+      console.log('👤 Profil:', profile);
+      
+      // Test 3: Lire le journal d'aujourd'hui
+      const today = new Date().toISOString().split('T')[0];
+      const journal = await window.SheetsAPI.readJournal(today, today);
+      console.log('📅 Entrées du jour:', journal.length);
+      
+      this.app.showToast(`✅ API OK ! ${ingredients.length} ingrédients trouvés`, 'success');
+      
+    } catch (error) {
+      console.error('❌ Erreur API:', error);
+      this.app.showToast('Erreur lors du test de l\'API', 'error');
+    }
   }
 
   /**
@@ -404,6 +496,15 @@ const dashboardStyles = `
   .btn-small {
     padding: var(--spacing-xs) var(--spacing-md);
     font-size: 0.875rem;
+  }
+  
+  .api-test {
+    opacity: 0.5;
+    transition: opacity 0.3s;
+  }
+  
+  .api-test:hover {
+    opacity: 1;
   }
 </style>
 `;
