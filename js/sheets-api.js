@@ -1,7 +1,7 @@
 /**
  * sheets-api.js - Interface avec Google Sheets API
  * Gère la lecture et l'écriture des données dans le spreadsheet
- * Version: 1.2.0
+ * Version: 1.2.1
  */
 
 class SheetsAPI {
@@ -37,6 +37,28 @@ class SheetsAPI {
       console.error('❌ Erreur lors de l\'initialisation de Sheets API:', error);
       throw error;
     }
+  }
+
+  /**
+   * Convertit une date du format français DD/MM/YYYY vers ISO YYYY-MM-DD
+   * Exemple: "25/07/2025" → "2025-07-25"
+   */
+  frenchToISODate(frenchDate) {
+    if (!frenchDate) return '';
+    const parts = frenchDate.split('/');
+    if (parts.length !== 3) return frenchDate;
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  }
+
+  /**
+   * Convertit une date ISO YYYY-MM-DD vers format français DD/MM/YYYY
+   * Exemple: "2025-07-25" → "25/07/2025"
+   */
+  isoToFrenchDate(isoDate) {
+    if (!isoDate) return '';
+    const parts = isoDate.split('-');
+    if (parts.length !== 3) return isoDate;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
 
   /**
@@ -227,16 +249,27 @@ class SheetsAPI {
     console.log(`📖 Lecture du journal${startDate ? ` du ${startDate}` : ''}${endDate ? ` au ${endDate}` : ''}`);
     
     const rows = await this.readRange(this.sheets.journal, 'A2:F1000');
+    console.log(`📋 ${rows.length} lignes trouvées dans le journal`);
     
-    return rows.map((row, index) => ({
-      id: index + 2,
-      date: row[0] || '',
-      repas: row[1] || '',
-      type: row[2] || '',
-      reference: row[3] || '',
-      quantite: parseFloat(row[4]) || 0,
-      kcal: parseFloat(row[5]) || 0
-    })).filter(entry => {
+    return rows.map((row, index) => {
+      const entry = {
+        id: index + 2,
+        date: this.frenchToISODate(row[0] || ''), // Convertit DD/MM/YYYY en YYYY-MM-DD
+        dateFrench: row[0] || '', // Garde le format original
+        repas: row[1] || '',
+        type: row[2] || '',
+        reference: row[3] || '',
+        quantite: parseFloat(row[4]) || 0,
+        kcal: parseFloat(row[5]) || 0
+      };
+      
+      // Log pour debug (première entrée seulement)
+      if (index === 0 && row[0]) {
+        console.log(`📅 Exemple de conversion: ${row[0]} → ${entry.date}`);
+      }
+      
+      return entry;
+    }).filter(entry => {
       if (!entry.date) return false;
       if (!startDate && !endDate) return true;
       
@@ -254,8 +287,11 @@ class SheetsAPI {
   async addJournalEntry(entry) {
     console.log('➕ Ajout au journal:', entry);
     
+    // Convertit la date au format français pour l'écriture
+    const dateFrench = entry.date ? this.isoToFrenchDate(entry.date) : this.isoToFrenchDate(new Date().toISOString().split('T')[0]);
+    
     const values = [[
-      entry.date || new Date().toISOString().split('T')[0],
+      dateFrench,
       entry.repas || '',
       entry.type || '',
       entry.reference || '',
@@ -390,6 +426,8 @@ class SheetsAPI {
 
   /**
    * Calcule les totaux du jour
+   * @param {string} date - Date au format ISO (YYYY-MM-DD)
+   * @returns {object} Totaux par repas et total général
    */
   async getDayTotals(date) {
     const totals = {
@@ -402,6 +440,7 @@ class SheetsAPI {
     
     try {
       const dayEntries = await this.readJournal(date, date);
+      console.log(`📊 ${dayEntries.length} entrées trouvées pour le ${date}`);
       
       dayEntries.forEach(entry => {
         totals.total += entry.kcal;
