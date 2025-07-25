@@ -1,6 +1,6 @@
 /* ==============================================
    KHRYSALIDE - Feuille de styles principale
-   Version: 1.0.1
+   Version: 1.1.1
    ============================================== */
 
 /* ==============================================
@@ -253,7 +253,7 @@ p {
 }
 
 .page {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   max-width: 600px;
   margin: 0 auto;
   animation: pageEnter 0.3s ease-out;
@@ -292,37 +292,37 @@ p {
 }
 
 .btn-primary {
-  background-color: var(--color-mint);
-  color: var(--color-white);
-  box-shadow: var(--shadow-md);
-}
-
-.btn-primary:hover {
-  background-color: #47B89F;
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
-
-.btn-secondary {
   background-color: var(--color-coral);
   color: var(--color-white);
   box-shadow: var(--shadow-coral);
 }
 
-.btn-secondary:hover {
+.btn-primary:hover {
   background-color: #FF7A86;
   box-shadow: 0 6px 20px rgba(255, 139, 148, 0.3);
   transform: translateY(-2px);
 }
 
+.btn-secondary {
+  background-color: var(--color-mint);
+  color: var(--color-white);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:hover {
+  background-color: #47B89F;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
 .btn-outline {
   background-color: transparent;
-  color: var(--color-mint);
-  border: 3px solid var(--color-mint);
+  color: var(--color-coral);
+  border: 3px solid var(--color-coral);
 }
 
 .btn-outline:hover {
-  background-color: var(--color-mint);
+  background-color: var(--color-coral);
   color: var(--color-white);
 }
 
@@ -351,9 +351,9 @@ p {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background-color: var(--color-mint);
+  background-color: var(--color-coral);
   color: var(--color-white);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-coral);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -365,7 +365,7 @@ p {
 
 .fab:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 12px 40px rgba(82, 209, 179, 0.3);
+  box-shadow: 0 12px 40px rgba(255, 139, 148, 0.3);
 }
 
 /* ==============================================
@@ -374,7 +374,7 @@ p {
 .card {
   background-color: var(--color-white);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   box-shadow: var(--shadow-md);
   transition: all var(--transition-normal);
   position: relative;
@@ -1000,7 +1000,7 @@ p {
 /* État vide */
 .empty-state {
   text-align: center;
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-lg);
 }
 
 .empty-icon {
@@ -1018,7 +1018,6 @@ p {
   color: var(--color-text-light);
   margin-bottom: var(--spacing-lg);
 }
-
 
 /* Skeleton loader */
 .skeleton {
