@@ -1,7 +1,7 @@
 /**
  * sheets-api.js - Interface avec Google Sheets API
  * Gère la lecture et l'écriture des données dans le spreadsheet
- * Version: 1.2.1
+ * Version: 1.3.5
  */
 
 class SheetsAPI {
@@ -468,6 +468,81 @@ class SheetsAPI {
     }
     
     return totals;
+  }
+
+  /**
+   * Génère la prochaine référence disponible
+   * Format: 0001, 0002, etc.
+   */
+  async getNextReference() {
+    console.log('🔢 Génération de la prochaine référence...');
+    
+    try {
+      const ingredients = await this.readIngredients();
+      
+      // Extrait tous les numéros des références existantes
+      const numbers = ingredients
+        .map(ing => {
+          // Extrait le nombre de la référence (ex: "FRU01" → 1, "0042" → 42)
+          const match = ing.reference?.match(/(\d+)$/);
+          return match ? parseInt(match[1]) : 0;
+        })
+        .filter(n => !isNaN(n));
+      
+      // Trouve le plus grand numéro
+      const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+      
+      // Génère la prochaine référence (format 0000)
+      const nextNumber = maxNumber + 1;
+      const nextRef = nextNumber.toString().padStart(4, '0');
+      
+      console.log(`✅ Prochaine référence: ${nextRef}`);
+      return nextRef;
+      
+    } catch (error) {
+      console.error('Erreur lors de la génération de référence:', error);
+      // Fallback avec timestamp
+      return Date.now().toString().slice(-4);
+    }
+  }
+
+  /**
+   * Lit les options des menus déroulants
+   * @returns {Object} {categories: [], fournisseurs: [], unites: []}
+   */
+  async readMenuOptions() {
+    console.log('📋 Lecture des menus déroulants...');
+    
+    try {
+      const rows = await this.readRange('menus déroulants', 'A2:C100');
+      
+      const options = {
+        categories: new Set(),
+        fournisseurs: new Set(),
+        unites: new Set()
+      };
+      
+      rows.forEach(row => {
+        if (row[0]) options.categories.add(row[0]);
+        if (row[1]) options.fournisseurs.add(row[1]);
+        if (row[2]) options.unites.add(row[2]);
+      });
+      
+      return {
+        categories: Array.from(options.categories).sort(),
+        fournisseurs: Array.from(options.fournisseurs).sort(),
+        unites: Array.from(options.unites).sort()
+      };
+      
+    } catch (error) {
+      console.error('Erreur lors de la lecture des menus:', error);
+      // Valeurs par défaut
+      return {
+        categories: ['Fruits', 'Légumes', 'Viandes', 'Produits laitiers'],
+        fournisseurs: ['Bio Market', 'Primeur Local', 'Jardin Direct'],
+        unites: ['g', 'kg', 'L', 'mL', 'pièce', 'pot', 'sachet']
+      };
+    }
   }
 }
 
