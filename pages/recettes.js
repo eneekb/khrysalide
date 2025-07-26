@@ -779,9 +779,62 @@ class RecettesPage {
   }
 
   async saveRecette() {
-    // TODO: Implémenter la sauvegarde dans sheets-api.js
-    this.app.showToast('Sauvegarde des recettes non encore implémentée', 'warning');
-    this.hideModal();
+    const formData = {
+      intitule: document.getElementById('input-intitule').value,
+      portion: parseInt(document.getElementById('input-portions').value) || 1,
+      instructions: document.getElementById('input-instructions').value,
+      ingredients: []
+    };
+
+    // Collecte les ingrédients
+    const ingredientRows = document.querySelectorAll('.ingredient-input-row');
+    ingredientRows.forEach(row => {
+      const select = row.querySelector('.ingredient-select');
+      const quantity = row.querySelector('.ingredient-quantity');
+      const unit = row.querySelector('.ingredient-unit');
+      
+      if (select.value && quantity.value) {
+        formData.ingredients.push({
+          ref: select.value,
+          quantite: parseFloat(quantity.value),
+          unite: unit.value
+        });
+      }
+    });
+
+    // Validation
+    if (!formData.intitule) {
+      this.app.showToast('Le nom de la recette est obligatoire', 'error');
+      return;
+    }
+
+    if (formData.ingredients.length === 0) {
+      this.app.showToast('Ajoutez au moins un ingrédient', 'error');
+      return;
+    }
+
+    try {
+      if (this.currentRecette) {
+        // Mode édition
+        formData.numero = this.currentRecette.numero;
+        await this.app.modules.sheets.updateRecipe(this.currentRecette.id, formData);
+        this.app.showToast('Recette mise à jour avec succès', 'success');
+      } else {
+        // Mode création
+        await this.app.modules.sheets.addRecipe(formData);
+        this.app.showToast('Recette créée avec succès', 'success');
+      }
+      
+      // Recharge les données
+      await this.loadRecettes();
+      this.filterRecettes();
+      this.updateRecettesList();
+      
+      this.hideModal();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      this.app.showToast('Erreur lors de la sauvegarde', 'error');
+    }
   }
 
   hideModal() {
