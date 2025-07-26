@@ -1,7 +1,7 @@
 /**
  * aliments.js - Page de consultation et recherche des aliments
  * Affiche la liste des ingrédients avec recherche et filtres
- * Version: 1.3.6
+ * Version: 1.4.0
  */
 
 class AlimentsPage {
@@ -872,18 +872,19 @@ class AlimentsPage {
 
     try {
       if (existingIngredient) {
-        // TODO: Implémenter la mise à jour dans sheets-api.js
-        this.app.showToast('Mise à jour non encore implémentée', 'warning');
+        // Mise à jour de l'ingrédient existant
+        await this.app.modules.sheets.updateIngredient(existingIngredient.id, formData);
+        this.app.showToast('Aliment modifié avec succès', 'success');
       } else {
         // Ajouter nouvel ingrédient
         await this.app.modules.sheets.addIngredient(formData);
         this.app.showToast('Aliment ajouté avec succès', 'success');
-        
-        // Recharge les données
-        await this.loadIngredients();
-        this.filterIngredients();
-        this.updateIngredientsList();
       }
+      
+      // Recharge les données
+      await this.loadIngredients();
+      this.filterIngredients();
+      this.updateIngredientsList();
       
       this.hideModal();
     } catch (error) {
