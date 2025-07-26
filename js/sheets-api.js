@@ -1,7 +1,7 @@
 /**
  * sheets-api.js - Interface avec Google Sheets API
  * Gère la lecture et l'écriture des données dans le spreadsheet
- * Version: 1.3.5
+ * Version: 1.4.0
  */
 
 class SheetsAPI {
@@ -201,6 +201,32 @@ class SheetsAPI {
   }
 
   /**
+   * Met à jour un ingrédient existant
+   */
+  async updateIngredient(rowId, ingredient) {
+    console.log('✏️ Mise à jour de l\'ingrédient ligne', rowId);
+    
+    const values = [[
+      ingredient.categorie || '',
+      ingredient.reference || '',
+      ingredient.intitule || '',
+      ingredient.precisions || '',
+      ingredient.fournisseur || '',
+      ingredient.conditionnement || '',
+      ingredient.unite || '',
+      ingredient.poidsParUnite || '',
+      ingredient.prix || '',
+      ingredient.kcal100g || '',
+      ingredient.prixParUnite || '',
+      ingredient.kcalParUnite || '',
+      ingredient.prixParKcal || ''
+    ]];
+    
+    const range = `A${rowId}:M${rowId}`;
+    return await this.writeRange(this.sheets.ingredients, range, values);
+  }
+
+  /**
    * Lit toutes les recettes
    */
   async readRecipes() {
@@ -237,6 +263,180 @@ class SheetsAPI {
       
       return recette;
     }).filter(r => r.intitule); // Filtre les lignes vides
+  }
+
+  /**
+   * Génère le prochain numéro de recette
+   * Format: R001, R002, etc.
+   */
+  async getNextRecipeNumber() {
+    console.log('🔢 Génération du prochain numéro de recette...');
+    
+    try {
+      const recettes = await this.readRecipes();
+      
+      // Extrait tous les numéros
+      const numbers = recettes
+        .map(r => {
+          const match = r.numero?.match(/R(\d+)/);
+          return match ? parseInt(match[1]) : 0;
+        })
+        .filter(n => !isNaN(n));
+      
+      // Trouve le plus grand numéro
+      const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
+      
+      // Génère le prochain numéro
+      const nextNumber = maxNumber + 1;
+      const nextRef = `R${nextNumber.toString().padStart(3, '0')}`;
+      
+      console.log(`✅ Prochain numéro: ${nextRef}`);
+      return nextRef;
+      
+    } catch (error) {
+      console.error('Erreur lors de la génération du numéro:', error);
+      // Fallback
+      return `R${Date.now().toString().slice(-3)}`;
+    }
+  }
+
+  /**
+   * Ajoute une nouvelle recette
+   */
+  async addRecipe(recette) {
+    console.log('➕ Ajout d\'une recette:', recette.intitule);
+    
+    // Génère le numéro si pas fourni
+    if (!recette.numero) {
+      recette.numero = await this.getNextRecipeNumber();
+    }
+    
+    // Calcule les totaux
+    let poidsTotal = 0;
+    let kcalTotal = 0;
+    let prixTotal = 0;
+    
+    // Récupère les infos des ingrédients pour les calculs
+    const ingredientsData = await this.readIngredients();
+    
+    const ingredientsRow = [];
+    
+    for (const ing of recette.ingredients) {
+      const ingredientInfo = ingredientsData.find(i => i.reference === ing.ref);
+      if (ingredientInfo) {
+        // Calcule les valeurs
+        const kcal = (ing.quantite * ingredientInfo.kcal100g) / 100;
+        const prix = (ing.quantite * ingredientInfo.prix) / ingredientInfo.poidsParUnite;
+        
+        poidsTotal += ing.quantite;
+        kcalTotal += kcal;
+        prixTotal += prix;
+        
+        // Ajoute les 6 colonnes pour cet ingrédient
+        ingredientsRow.push(
+          ing.ref,
+          ingredientInfo.intitule,
+          ing.quantite,
+          ing.unite || ingredientInfo.unite,
+          Math.round(kcal),
+          prix.toFixed(2)
+        );
+      }
+    }
+    
+    // Remplit jusqu'à 15 ingrédients (90 colonnes)
+    while (ingredientsRow.length < 90) {
+      ingredientsRow.push('');
+    }
+    
+    // Construit la ligne complète
+    const values = [[
+      recette.numero,
+      recette.intitule,
+      recette.portion || 1,
+      recette.instructions || '',
+      Math.round(poidsTotal),
+      Math.round(kcalTotal),
+      prixTotal.toFixed(2),
+      ...ingredientsRow
+    ]];
+    
+    const result = await this.appendRows(this.sheets.recettes, values);
+    
+    // Notifie l'utilisateur
+    if (window.app?.showToast) {
+      window.app.showToast('Recette ajoutée avec succès !', 'success');
+    }
+    
+    return result;
+  }
+
+  /**
+   * Met à jour une recette existante
+   */
+  async updateRecipe(rowId, recette) {
+    console.log('✏️ Mise à jour de la recette ligne', rowId);
+    
+    // Calcule les totaux
+    let poidsTotal = 0;
+    let kcalTotal = 0;
+    let prixTotal = 0;
+    
+    // Récupère les infos des ingrédients pour les calculs
+    const ingredientsData = await this.readIngredients();
+    
+    const ingredientsRow = [];
+    
+    for (const ing of recette.ingredients) {
+      const ingredientInfo = ingredientsData.find(i => i.reference === ing.ref);
+      if (ingredientInfo) {
+        // Calcule les valeurs
+        const kcal = (ing.quantite * ingredientInfo.kcal100g) / 100;
+        const prix = (ing.quantite * ingredientInfo.prix) / ingredientInfo.poidsParUnite;
+        
+        poidsTotal += ing.quantite;
+        kcalTotal += kcal;
+        prixTotal += prix;
+        
+        // Ajoute les 6 colonnes pour cet ingrédient
+        ingredientsRow.push(
+          ing.ref,
+          ingredientInfo.intitule,
+          ing.quantite,
+          ing.unite || ingredientInfo.unite,
+          Math.round(kcal),
+          prix.toFixed(2)
+        );
+      }
+    }
+    
+    // Remplit jusqu'à 15 ingrédients (90 colonnes)
+    while (ingredientsRow.length < 90) {
+      ingredientsRow.push('');
+    }
+    
+    // Construit la ligne complète
+    const values = [[
+      recette.numero,
+      recette.intitule,
+      recette.portion || 1,
+      recette.instructions || '',
+      Math.round(poidsTotal),
+      Math.round(kcalTotal),
+      prixTotal.toFixed(2),
+      ...ingredientsRow
+    ]];
+    
+    // Détermine la plage (A à CR pour 97 colonnes)
+    const range = `A${rowId}:CR${rowId}`;
+    const result = await this.writeRange(this.sheets.recettes, range, values);
+    
+    // Notifie l'utilisateur
+    if (window.app?.showToast) {
+      window.app.showToast('Recette mise à jour !', 'success');
+    }
+    
+    return result;
   }
 
   /**
