@@ -1,7 +1,7 @@
 /**
  * recettes.js - Page de consultation et gestion des recettes
  * Affiche la liste des recettes avec leurs détails
- * Version: 1.4.0
+ * Version: 1.4.1
  */
 
 class RecettesPage {
@@ -10,6 +10,9 @@ class RecettesPage {
     this.recettes = [];
     this.filteredRecettes = [];
     this.searchQuery = '';
+    this.selectedKcalRange = 'all';
+    this.selectedPrixRange = 'all';
+    this.menuOptions = { kcalRanges: [], prixRanges: [] };
     this.currentRecette = null;
     this.ingredients = []; // Pour la création de recettes
   }
@@ -18,6 +21,9 @@ class RecettesPage {
     console.log('🍽️ Initialisation de la page Recettes');
     
     try {
+      // Charge les options des menus déroulants
+      await this.loadMenuOptions();
+      
       // Charge les ingrédients (pour la création de recettes)
       await this.loadIngredients();
       
@@ -30,6 +36,24 @@ class RecettesPage {
     } catch (error) {
       console.error('Erreur lors du chargement des recettes:', error);
       this.app.showToast('Erreur lors du chargement des recettes', 'error');
+    }
+  }
+
+  async loadMenuOptions() {
+    try {
+      if (this.app.modules.sheets.readMenuOptions) {
+        const options = await this.app.modules.sheets.readMenuOptions();
+        this.menuOptions.kcalRanges = options.kcalRanges || [];
+        this.menuOptions.prixRanges = options.prixRanges || [];
+        console.log('✅ Options de filtres chargées');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des menus:', error);
+      // Valeurs par défaut
+      this.menuOptions = {
+        kcalRanges: ['< 100 kcal', '100-300 kcal', '300-500 kcal', '> 500 kcal'],
+        prixRanges: ['< 5€', '5-10€', '10-20€', '> 20€']
+      };
     }
   }
 
@@ -57,24 +81,69 @@ class RecettesPage {
   filterRecettes() {
     const query = this.searchQuery.toLowerCase();
     
-    if (!query) {
-      this.filteredRecettes = [...this.recettes];
-    } else {
-      this.filteredRecettes = this.recettes.filter(recette => {
-        // Recherche dans le nom
-        if (recette.intitule.toLowerCase().includes(query)) return true;
-        
-        // Recherche dans les ingrédients
-        return recette.ingredients.some(ing => 
+    this.filteredRecettes = this.recettes.filter(recette => {
+      // Filtre par recherche
+      if (query) {
+        const matchName = recette.intitule.toLowerCase().includes(query);
+        const matchIngredients = recette.ingredients.some(ing => 
           ing.nom.toLowerCase().includes(query)
         );
-      });
-    }
+        if (!matchName && !matchIngredients) return false;
+      }
+      
+      // Filtre par calories
+      if (this.selectedKcalRange !== 'all') {
+        const kcal = recette.kcalTotal;
+        if (!this.matchesKcalRange(kcal, this.selectedKcalRange)) return false;
+      }
+      
+      // Filtre par prix
+      if (this.selectedPrixRange !== 'all') {
+        const prix = recette.prixTotal;
+        if (!this.matchesPrixRange(prix, this.selectedPrixRange)) return false;
+      }
+      
+      return true;
+    });
     
     // Trie par nom
     this.filteredRecettes.sort((a, b) => 
       a.intitule.localeCompare(b.intitule)
     );
+  }
+
+  matchesKcalRange(kcal, range) {
+    if (range.includes('< 100')) return kcal < 100;
+    if (range.includes('100-300')) return kcal >= 100 && kcal <= 300;
+    if (range.includes('300-500')) return kcal >= 300 && kcal <= 500;
+    if (range.includes('> 500')) return kcal > 500;
+    
+    // Format générique "X-Y kcal"
+    const match = range.match(/(\d+)-(\d+)/);
+    if (match) {
+      const min = parseInt(match[1]);
+      const max = parseInt(match[2]);
+      return kcal >= min && kcal <= max;
+    }
+    
+    return true;
+  }
+
+  matchesPrixRange(prix, range) {
+    if (range.includes('< 5')) return prix < 5;
+    if (range.includes('5-10')) return prix >= 5 && prix <= 10;
+    if (range.includes('10-20')) return prix >= 10 && prix <= 20;
+    if (range.includes('> 20')) return prix > 20;
+    
+    // Format générique "X-Y€"
+    const match = range.match(/(\d+)-(\d+)/);
+    if (match) {
+      const min = parseInt(match[1]);
+      const max = parseInt(match[2]);
+      return prix >= min && prix <= max;
+    }
+    
+    return true;
   }
 
   render() {
@@ -98,6 +167,27 @@ class RecettesPage {
               id="search-recettes"
             >
             <i class="search-icon">🔍</i>
+          </div>
+          
+          <!-- Filtres -->
+          <div class="filters-container">
+            <select class="filter-select" id="kcal-filter">
+              <option value="all">Toutes les calories</option>
+              ${this.menuOptions.kcalRanges.map(range => `
+                <option value="${range}" ${this.selectedKcalRange === range ? 'selected' : ''}>
+                  ${range}
+                </option>
+              `).join('')}
+            </select>
+            
+            <select class="filter-select" id="prix-filter">
+              <option value="all">Tous les prix</option>
+              ${this.menuOptions.prixRanges.map(range => `
+                <option value="${range}" ${this.selectedPrixRange === range ? 'selected' : ''}>
+                  ${range}
+                </option>
+              `).join('')}
+            </select>
           </div>
         </div>
 
@@ -182,6 +272,29 @@ class RecettesPage {
           pointer-events: none;
         }
 
+        .filters-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin-bottom: 4px;
+        }
+
+        .filter-select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 2px solid #eee;
+          border-radius: 20px;
+          font-size: 14px;
+          background: white;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .filter-select:focus {
+          outline: none;
+          border-color: var(--color-mint);
+        }
+
         .results-count {
           padding: 8px 20px;
           font-size: 14px;
@@ -245,6 +358,11 @@ class RecettesPage {
           margin-right: 16px;
         }
 
+        .recette-prix {
+          color: var(--color-mint);
+          font-weight: 500;
+        }
+
         .recette-ingredients-preview {
           font-size: 13px;
           color: #999;
@@ -269,8 +387,77 @@ class RecettesPage {
         }
 
         /* Modal spécifique pour recettes */
+        .modal {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 1000;
+          padding: 20px;
+          overflow-y: auto;
+        }
+
+        .modal.show {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 400px;
+          max-height: 90vh;
+          overflow-y: auto;
+          animation: modalSlideIn 0.3s ease-out;
+        }
+
         .modal-large {
           max-width: 500px;
+        }
+
+        @keyframes modalSlideIn {
+          from {
+            transform: translateY(100px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+          font-size: 20px;
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 24px;
+          color: #999;
+          cursor: pointer;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+        }
+
+        .modal-body {
+          padding: 20px;
         }
 
         .ingredients-list {
@@ -426,6 +613,41 @@ class RecettesPage {
           outline: none;
           border-color: var(--color-mint);
         }
+
+        .form-input {
+          width: 100%;
+          padding: 10px 14px;
+          border: 2px solid #eee;
+          border-radius: 12px;
+          font-size: 15px;
+          transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+          outline: none;
+          border-color: var(--color-mint);
+        }
+
+        .form-group {
+          margin-bottom: 16px;
+        }
+
+        .form-label {
+          display: block;
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 6px;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 24px;
+        }
+
+        .modal-actions .btn {
+          flex: 1;
+        }
       </style>
     `;
   }
@@ -461,7 +683,8 @@ class RecettesPage {
               <span>👥</span>
               <span>${recette.portion} portion${recette.portion > 1 ? 's' : ''}</span>
             </span>
-            <span>${recette.ingredients.length} ingrédients</span>
+            <span class="recette-prix">${recette.prixTotal ? recette.prixTotal.toFixed(2) + '€' : '-'}</span>
+            <span> • ${recette.ingredients.length} ingrédients</span>
           </div>
           <div class="recette-ingredients-preview">
             ${ingredientsPreview}${moreIngredients}
@@ -477,6 +700,26 @@ class RecettesPage {
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         this.searchQuery = e.target.value;
+        this.filterRecettes();
+        this.updateRecettesList();
+      });
+    }
+
+    // Filtre de calories
+    const kcalFilter = document.getElementById('kcal-filter');
+    if (kcalFilter) {
+      kcalFilter.addEventListener('change', (e) => {
+        this.selectedKcalRange = e.target.value;
+        this.filterRecettes();
+        this.updateRecettesList();
+      });
+    }
+
+    // Filtre de prix
+    const prixFilter = document.getElementById('prix-filter');
+    if (prixFilter) {
+      prixFilter.addEventListener('change', (e) => {
+        this.selectedPrixRange = e.target.value;
         this.filterRecettes();
         this.updateRecettesList();
       });
@@ -542,7 +785,7 @@ class RecettesPage {
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
 
-    modalTitle.textContent = recette ? recette.intitule : 'Nouvelle recette';
+    modalTitle.textContent = recette ? 'Détails de la recette' : 'Nouvelle recette';
 
     if (recette) {
       // Mode visualisation
@@ -551,6 +794,8 @@ class RecettesPage {
       
       modalBody.innerHTML = `
         <div id="view-mode">
+          <h3 style="margin: 0 0 16px 0; font-size: 22px;">${recette.intitule}</h3>
+          
           <!-- Informations générales -->
           <div class="info-grid">
             <div class="info-box">
@@ -841,19 +1086,6 @@ class RecettesPage {
     const modal = document.getElementById('recette-modal');
     modal.classList.remove('show');
     this.currentRecette = null;
-  }
-
-  updateRecettesList() {
-    const listContainer = document.querySelector('.recettes-list');
-    if (listContainer) {
-      listContainer.innerHTML = this.renderRecettesList();
-      this.attachRecetteEvents();
-    }
-
-    const countElement = document.querySelector('.results-count');
-    if (countElement) {
-      countElement.textContent = `${this.filteredRecettes.length} recette${this.filteredRecettes.length > 1 ? 's' : ''} trouvée${this.filteredRecettes.length > 1 ? 's' : ''}`;
-    }
   }
 
   getDemoRecettes() {
