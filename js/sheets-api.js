@@ -1,7 +1,7 @@
 /**
  * sheets-api.js - Interface avec Google Sheets API
  * Gère la lecture et l'écriture des données dans le spreadsheet
- * Version: 1.4.0
+ * Version: 1.4.1
  */
 
 class SheetsAPI {
@@ -708,30 +708,36 @@ class SheetsAPI {
 
   /**
    * Lit les options des menus déroulants
-   * @returns {Object} {categories: [], fournisseurs: [], unites: []}
+   * @returns {Object} {categories: [], fournisseurs: [], unites: [], kcalRanges: [], prixRanges: []}
    */
   async readMenuOptions() {
     console.log('📋 Lecture des menus déroulants...');
     
     try {
-      const rows = await this.readRange('menus déroulants', 'A2:C100');
+      const rows = await this.readRange('menus déroulants', 'A2:E100');
       
       const options = {
         categories: new Set(),
         fournisseurs: new Set(),
-        unites: new Set()
+        unites: new Set(),
+        kcalRanges: new Set(),
+        prixRanges: new Set()
       };
       
       rows.forEach(row => {
         if (row[0]) options.categories.add(row[0]);
         if (row[1]) options.fournisseurs.add(row[1]);
         if (row[2]) options.unites.add(row[2]);
+        if (row[3]) options.kcalRanges.add(row[3]);
+        if (row[4]) options.prixRanges.add(row[4]);
       });
       
       return {
         categories: Array.from(options.categories).sort(),
         fournisseurs: Array.from(options.fournisseurs).sort(),
-        unites: Array.from(options.unites).sort()
+        unites: Array.from(options.unites).sort(),
+        kcalRanges: Array.from(options.kcalRanges).sort(),
+        prixRanges: Array.from(options.prixRanges).sort()
       };
       
     } catch (error) {
@@ -740,7 +746,9 @@ class SheetsAPI {
       return {
         categories: ['Fruits', 'Légumes', 'Viandes', 'Produits laitiers'],
         fournisseurs: ['Bio Market', 'Primeur Local', 'Jardin Direct'],
-        unites: ['g', 'kg', 'L', 'mL', 'pièce', 'pot', 'sachet']
+        unites: ['g', 'kg', 'L', 'mL', 'pièce', 'pot', 'sachet'],
+        kcalRanges: ['< 100 kcal', '100-300 kcal', '300-500 kcal', '> 500 kcal'],
+        prixRanges: ['< 5€', '5-10€', '10-20€', '> 20€']
       };
     }
   }
