@@ -1,7 +1,7 @@
 /**
  * sheets-api.js - Interface avec Google Sheets API
  * Gère la lecture et l'écriture des données dans le spreadsheet
- * Version: 1.4.1
+ * Version: 1.4.2
  */
 
 class SheetsAPI {
@@ -228,6 +228,7 @@ class SheetsAPI {
 
   /**
    * Lit toutes les recettes
+   * MISE À JOUR : Ajout de la colonne Validation (colonne C)
    */
   async readRecipes() {
     console.log('📖 Lecture des recettes...');
@@ -239,16 +240,17 @@ class SheetsAPI {
         id: index + 2,
         numero: row[0] || '',
         intitule: row[1] || '',
-        portion: parseFloat(row[2]) || 1,
-        instructions: row[3] || '',
-        poids: parseFloat(row[4]) || 0,
-        kcalTotal: parseFloat(row[5]) || 0,
-        prixTotal: parseFloat(row[6]) || 0,
+        validation: row[2] === 'X' || row[2] === 'x', // Nouvelle colonne C
+        portion: parseFloat(row[3]) || 1,            // Décalé de C à D
+        instructions: row[4] || '',                   // Décalé de D à E
+        poids: parseFloat(row[5]) || 0,              // Décalé de E à F
+        kcalTotal: parseFloat(row[6]) || 0,          // Décalé de F à G
+        prixTotal: parseFloat(row[7]) || 0,          // Décalé de G à H
         ingredients: []
       };
       
-      // Parse les ingrédients (colonnes H et suivantes, par groupes de 6)
-      for (let i = 7; i < row.length; i += 6) {
+      // Parse les ingrédients (colonnes I et suivantes, par groupes de 6)
+      for (let i = 8; i < row.length; i += 6) {  // Décalé de 7 à 8
         if (row[i] && row[i + 1]) { // Si ref et nom existent
           recette.ingredients.push({
             ref: row[i],
@@ -302,6 +304,7 @@ class SheetsAPI {
 
   /**
    * Ajoute une nouvelle recette
+   * MISE À JOUR : Ajout de la colonne Validation
    */
   async addRecipe(recette) {
     console.log('➕ Ajout d\'une recette:', recette.intitule);
@@ -349,10 +352,11 @@ class SheetsAPI {
       ingredientsRow.push('');
     }
     
-    // Construit la ligne complète
+    // Construit la ligne complète avec la nouvelle colonne Validation
     const values = [[
       recette.numero,
       recette.intitule,
+      recette.validation ? 'X' : '',  // Nouvelle colonne C
       recette.portion || 1,
       recette.instructions || '',
       Math.round(poidsTotal),
@@ -373,6 +377,7 @@ class SheetsAPI {
 
   /**
    * Met à jour une recette existante
+   * MISE À JOUR : Ajout de la colonne Validation
    */
   async updateRecipe(rowId, recette) {
     console.log('✏️ Mise à jour de la recette ligne', rowId);
@@ -415,10 +420,11 @@ class SheetsAPI {
       ingredientsRow.push('');
     }
     
-    // Construit la ligne complète
+    // Construit la ligne complète avec la nouvelle colonne Validation
     const values = [[
       recette.numero,
       recette.intitule,
+      recette.validation ? 'X' : '',  // Nouvelle colonne C
       recette.portion || 1,
       recette.instructions || '',
       Math.round(poidsTotal),
@@ -427,8 +433,8 @@ class SheetsAPI {
       ...ingredientsRow
     ]];
     
-    // Détermine la plage (A à CR pour 97 colonnes)
-    const range = `A${rowId}:CR${rowId}`;
+    // Détermine la plage (A à CS pour 98 colonnes avec la nouvelle colonne)
+    const range = `A${rowId}:CS${rowId}`;
     const result = await this.writeRange(this.sheets.recettes, range, values);
     
     // Notifie l'utilisateur
@@ -761,4 +767,4 @@ window.SheetsAPI = new SheetsAPI();
 // Si l'app est déjà chargée, on peut initialiser
 if (window.app) {
   console.log('App détectée, SheetsAPI prêt à être initialisé');
-}
+}}
