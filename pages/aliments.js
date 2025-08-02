@@ -1,7 +1,7 @@
 /**
  * aliments.js - Page de consultation et recherche des aliments
  * Affiche la liste des ingrédients avec recherche et filtres
- * Version: 1.4.0
+ * Version: 1.4.1
  */
 
 class AlimentsPage {
@@ -14,7 +14,7 @@ class AlimentsPage {
     this.selectedFournisseur = 'all';
     this.categories = new Set();
     this.fournisseurs = new Set();
-    this.menuOptions = { categories: [], fournisseurs: [], unites: [] };
+    this.menuOptions = { categories: [], fournisseurs: [], unites: [], kcalRanges: [], prixRanges: [] };
     this.currentIngredient = null;
   }
 
@@ -49,7 +49,9 @@ class AlimentsPage {
       this.menuOptions = {
         categories: ['Fruits', 'Légumes', 'Viandes', 'Produits laitiers'],
         fournisseurs: ['Bio Market', 'Primeur Local', 'Jardin Direct'],
-        unites: ['g', 'kg', 'L', 'mL', 'pièce', 'pot', 'sachet']
+        unites: ['g', 'kg', 'L', 'mL', 'pièce', 'pot', 'sachet'],
+        kcalRanges: [],
+        prixRanges: []
       };
     }
   }
