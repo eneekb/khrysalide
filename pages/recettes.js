@@ -1125,3 +1125,4 @@ class RecettesPage {
 
 // Export global
 window.RecettesPage = RecettesPage;
+
