@@ -732,12 +732,13 @@ class SheetsAPI {
         if (row[4]) options.prixRanges.add(row[4]);
       });
       
+      // Convertit en array SANS trier pour garder l'ordre du sheet
       return {
-        categories: Array.from(options.categories).sort(),
-        fournisseurs: Array.from(options.fournisseurs).sort(),
-        unites: Array.from(options.unites).sort(),
-        kcalRanges: Array.from(options.kcalRanges).sort(),
-        prixRanges: Array.from(options.prixRanges).sort()
+        categories: Array.from(options.categories),
+        fournisseurs: Array.from(options.fournisseurs),
+        unites: Array.from(options.unites),
+        kcalRanges: Array.from(options.kcalRanges),
+        prixRanges: Array.from(options.prixRanges)
       };
       
     } catch (error) {
