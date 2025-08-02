@@ -1,7 +1,7 @@
 /**
  * recettes.js - Page de consultation et gestion des recettes
- * Affiche la liste des recettes avec leurs détails
- * Version: 1.4.1
+ * Affiche la liste des recettes avec leurs détails et gestion de la validation
+ * Version: 1.4.2
  */
 
 class RecettesPage {
@@ -60,6 +60,8 @@ class RecettesPage {
   async loadIngredients() {
     try {
       this.ingredients = await this.app.modules.sheets.readIngredients();
+      // Trie les ingrédients par ordre alphabétique
+      this.ingredients.sort((a, b) => a.intitule.localeCompare(b.intitule));
       console.log(`✅ ${this.ingredients.length} ingrédients disponibles`);
     } catch (error) {
       console.error('Erreur lors du chargement des ingrédients:', error);
@@ -106,7 +108,7 @@ class RecettesPage {
       return true;
     });
     
-    // Trie par nom
+    // Trie par nom alphabétique
     this.filteredRecettes.sort((a, b) => 
       a.intitule.localeCompare(b.intitule)
     );
@@ -314,6 +316,7 @@ class RecettesPage {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
           transition: all 0.3s ease;
           cursor: pointer;
+          position: relative;
         }
 
         .recette-card:active {
@@ -335,6 +338,14 @@ class RecettesPage {
           margin-right: 12px;
         }
 
+        .recette-validation {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          color: var(--color-mint);
+          font-size: 20px;
+        }
+
         .recette-kcal {
           background: var(--color-peach);
           color: var(--color-coral);
@@ -343,6 +354,7 @@ class RecettesPage {
           font-weight: 600;
           font-size: 14px;
           white-space: nowrap;
+          margin-right: 32px;
         }
 
         .recette-details {
@@ -458,6 +470,28 @@ class RecettesPage {
 
         .modal-body {
           padding: 20px;
+        }
+
+        .validation-section {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          background: #f0f8f5;
+          border-radius: 12px;
+          margin-bottom: 16px;
+        }
+
+        .validation-checkbox {
+          width: 20px;
+          height: 20px;
+          cursor: pointer;
+        }
+
+        .validation-label {
+          font-weight: 500;
+          color: #333;
+          cursor: pointer;
         }
 
         .ingredients-list {
@@ -674,6 +708,7 @@ class RecettesPage {
       
       return `
         <div class="recette-card" data-id="${recette.id}">
+          ${recette.validation ? '<span class="recette-validation">✔</span>' : ''}
           <div class="recette-header">
             <div class="recette-name">${recette.intitule}</div>
             <div class="recette-kcal">${Math.round(recette.kcalTotal)} kcal</div>
@@ -796,6 +831,15 @@ class RecettesPage {
         <div id="view-mode">
           <h3 style="margin: 0 0 16px 0; font-size: 22px;">${recette.intitule}</h3>
           
+          <!-- Section validation -->
+          <div class="validation-section">
+            <input type="checkbox" id="validation-checkbox" class="validation-checkbox" 
+                   ${recette.validation ? 'checked' : ''}>
+            <label for="validation-checkbox" class="validation-label">
+              Recette validée
+            </label>
+          </div>
+
           <!-- Informations générales -->
           <div class="info-grid">
             <div class="info-box">
@@ -870,6 +914,14 @@ class RecettesPage {
         if (btnClose) {
           btnClose.addEventListener('click', () => this.hideModal());
         }
+
+        // Gestion de la checkbox de validation
+        const validationCheckbox = document.getElementById('validation-checkbox');
+        if (validationCheckbox) {
+          validationCheckbox.addEventListener('change', async (e) => {
+            await this.updateRecetteValidation(recette, e.target.checked);
+          });
+        }
       }, 0);
     } else {
       // Mode création
@@ -877,6 +929,29 @@ class RecettesPage {
     }
 
     modal.classList.add('show');
+  }
+
+  async updateRecetteValidation(recette, isValidated) {
+    try {
+      // Met à jour la validation
+      recette.validation = isValidated;
+      
+      // Sauvegarde dans Sheets
+      await this.app.modules.sheets.updateRecipe(recette.id, recette);
+      
+      // Recharge les données pour rafraîchir l'affichage
+      await this.loadRecettes();
+      this.filterRecettes();
+      this.updateRecettesList();
+      
+      this.app.showToast(
+        isValidated ? 'Recette validée !' : 'Validation retirée', 
+        'success'
+      );
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la validation:', error);
+      this.app.showToast('Erreur lors de la mise à jour', 'error');
+    }
   }
 
   editRecette() {
@@ -896,6 +971,7 @@ class RecettesPage {
       intitule: '',
       portion: 1,
       instructions: '',
+      validation: false,
       ingredients: []
     };
     
@@ -913,6 +989,14 @@ class RecettesPage {
             <label class="form-label">Nombre de portions *</label>
             <input type="number" class="form-input" id="input-portions" 
                    value="${formData.portion}" required min="1" step="1">
+          </div>
+          
+          <div class="validation-section">
+            <input type="checkbox" id="input-validation" class="validation-checkbox" 
+                   ${formData.validation ? 'checked' : ''}>
+            <label for="input-validation" class="validation-label">
+              Recette validée
+            </label>
           </div>
         </div>
 
@@ -955,6 +1039,7 @@ class RecettesPage {
   }
 
   renderIngredientRow(ingredient, index) {
+    // Trie les ingrédients par ordre alphabétique
     const ingredientOptions = this.ingredients.map(ing => 
       `<option value="${ing.reference}" ${ingredient && ingredient.ref === ing.reference ? 'selected' : ''}>
         ${ing.intitule}
@@ -1028,6 +1113,7 @@ class RecettesPage {
       intitule: document.getElementById('input-intitule').value,
       portion: parseInt(document.getElementById('input-portions').value) || 1,
       instructions: document.getElementById('input-instructions').value,
+      validation: document.getElementById('input-validation').checked,
       ingredients: []
     };
 
@@ -1094,6 +1180,7 @@ class RecettesPage {
         id: 1,
         numero: 'R001',
         intitule: 'Salade de tomates mozza',
+        validation: true,
         portion: 2,
         instructions: 'Couper les tomates et la mozzarella en tranches. Alterner sur une assiette. Arroser d\'huile d\'olive et de vinaigre balsamique.',
         poids: 400,
@@ -1108,6 +1195,7 @@ class RecettesPage {
         id: 2,
         numero: 'R002',
         intitule: 'Poulet grillé aux légumes',
+        validation: false,
         portion: 4,
         instructions: 'Faire griller le poulet. Faire revenir les légumes. Servir ensemble.',
         poids: 800,
@@ -1125,4 +1213,3 @@ class RecettesPage {
 
 // Export global
 window.RecettesPage = RecettesPage;
-
