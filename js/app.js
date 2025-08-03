@@ -1,13 +1,13 @@
 /**
  * app.js - Point d'entrée et coordinateur principal de Khrysalide
  * Initialise et coordonne tous les modules
- * Version: 1.4.1
+ * Version: 1.4.2
  */
 
 // Configuration globale de l'application
 const APP_CONFIG = {
   name: 'Khrysalide',
-  version: '1.4.1',
+  version: '1.4.2',
   debug: true, // Mode debug pour le développement
   api: {
     spreadsheetId: '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY',
@@ -51,6 +51,9 @@ class KhrysalideApp {
       // Initialise l'authentification
       await this.initAuth();
       
+      // Initialise l'API Google
+      await this.initGoogleAPI();
+      
       // Initialise le routeur
       await this.initRouter();
       
@@ -73,7 +76,7 @@ class KhrysalideApp {
    */
   async loadModules() {
     // Vérifie la présence des modules
-    const requiredModules = ['Router', 'Auth'];
+    const requiredModules = ['Router', 'Auth', 'SheetsAPI'];
     const availableModules = requiredModules.filter(m => window[m]);
     
     this.log('📦 Modules disponibles:', availableModules);
@@ -125,6 +128,39 @@ class KhrysalideApp {
   }
 
   /**
+   * Initialise l'API Google (gapi)
+   */
+  async initGoogleAPI() {
+    if (window.gapi && this.state.isAuthenticated) {
+      try {
+        this.log('🔧 Initialisation de l\'API Google...');
+        
+        // Configure la clé API
+        await new Promise((resolve) => {
+          gapi.load('client', resolve);
+        });
+
+        await gapi.client.init({
+          apiKey: this.config.api.apiKey,
+          discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+        });
+
+        // Configure le token d'accès
+        const token = this.modules.auth?.getAccessToken();
+        if (token) {
+          gapi.client.setToken({
+            access_token: token
+          });
+        }
+
+        this.log('✅ API Google initialisée');
+      } catch (error) {
+        this.log('⚠️ Erreur lors de l\'initialisation de l\'API Google:', error);
+      }
+    }
+  }
+
+  /**
    * Initialise le routeur
    */
   async initRouter() {
@@ -154,7 +190,7 @@ class KhrysalideApp {
    * Initialise Sheets API
    */
   async initSheetsAPI() {
-    if (window.SheetsAPI) {
+    if (window.SheetsAPI && window.gapi && window.gapi.client && window.gapi.client.sheets) {
       try {
         this.modules.sheets = window.SheetsAPI;
         await this.modules.sheets.init();
@@ -163,6 +199,8 @@ class KhrysalideApp {
         this.log('⚠️ Erreur Sheets API:', error);
         // L'app peut continuer sans Sheets API en mode démo
       }
+    } else {
+      this.log('⚠️ Sheets API non disponible ou API Google non chargée');
     }
   }
 
@@ -215,7 +253,40 @@ class KhrysalideApp {
     if (window.Toast) {
       window.Toast.show(message, type);
     } else {
-      // Fallback simple
+      // Fallback simple avec style inline
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        background: ${type === 'success' ? '#52D1B3' : type === 'error' ? '#FF8B94' : '#FFD3B6'};
+        color: white;
+        border-radius: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 9999;
+        animation: slideUp 0.3s ease-out;
+        font-weight: 500;
+      `;
+      toast.textContent = message;
+      
+      // Style pour l'animation
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes slideUp {
+          from { transform: translate(-50%, 100px); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+      `;
+      document.head.appendChild(style);
+      
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = 'slideUp 0.3s ease-out reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+      
       console.log(`[${type.toUpperCase()}] ${message}`);
     }
   }
@@ -263,6 +334,9 @@ window.app = new KhrysalideApp();
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => window.app.init());
 } else {
+  // DOM déjà chargé
+  window.app.init();
+}
   // DOM déjà chargé
   window.app.init();
 }
