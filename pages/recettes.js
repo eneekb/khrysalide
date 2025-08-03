@@ -75,8 +75,9 @@ class RecettesPage {
       console.log(`✅ ${this.recettes.length} recettes chargées`);
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
-      // Données de démonstration en cas d'erreur
-      this.recettes = this.getDemoRecettes();
+      // Pas de données de démo, liste vide
+      this.recettes = [];
+      this.app.showToast('Impossible de charger les recettes', 'error');
     }
   }
 
@@ -1172,42 +1173,6 @@ class RecettesPage {
     const modal = document.getElementById('recette-modal');
     modal.classList.remove('show');
     this.currentRecette = null;
-  }
-
-  getDemoRecettes() {
-    return [
-      {
-        id: 1,
-        numero: 'R001',
-        intitule: 'Salade de tomates mozza',
-        validation: true,
-        portion: 2,
-        instructions: 'Couper les tomates et la mozzarella en tranches. Alterner sur une assiette. Arroser d\'huile d\'olive et de vinaigre balsamique.',
-        poids: 400,
-        kcalTotal: 320,
-        prixTotal: 4.50,
-        ingredients: [
-          { ref: 'LEG04', nom: 'Tomate', quantite: 300, unite: 'g', kcal: 54, prix: 1.50 },
-          { ref: 'LAI02', nom: 'Mozzarella', quantite: 125, unite: 'g', kcal: 266, prix: 3.00 }
-        ]
-      },
-      {
-        id: 2,
-        numero: 'R002',
-        intitule: 'Poulet grillé aux légumes',
-        validation: false,
-        portion: 4,
-        instructions: 'Faire griller le poulet. Faire revenir les légumes. Servir ensemble.',
-        poids: 800,
-        kcalTotal: 660,
-        prixTotal: 12.00,
-        ingredients: [
-          { ref: 'VIA01', nom: 'Poulet', quantite: 400, unite: 'g', kcal: 660, prix: 8.00 },
-          { ref: 'LEG01', nom: 'Carotte', quantite: 200, unite: 'g', kcal: 82, prix: 1.00 },
-          { ref: 'LEG03', nom: 'Courgette', quantite: 200, unite: 'g', kcal: 34, prix: 2.00 }
-        ]
-      }
-    ];
   }
 }
 
