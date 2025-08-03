@@ -39,34 +39,43 @@ class KhrysalideApp {
    * Initialise l'application
    */
   async init() {
+    console.log('[DEBUG] Début de init()');
     try {
       this.log('🌱 Initialisation de Khrysalide v' + this.config.version);
       
       // Vérifie la connexion
+      console.log('[DEBUG] checkOnlineStatus...');
       this.checkOnlineStatus();
       
       // Charge les modules essentiels
+      console.log('[DEBUG] loadModules...');
       await this.loadModules();
       
       // Initialise l'authentification
+      console.log('[DEBUG] initAuth...');
       await this.initAuth();
       
       // Initialise l'API Google
+      console.log('[DEBUG] initGoogleAPI...');
       await this.initGoogleAPI();
       
       // Initialise le routeur
+      console.log('[DEBUG] initRouter...');
       await this.initRouter();
       
       // Initialise Sheets API
+      console.log('[DEBUG] initSheetsAPI...');
       await this.initSheetsAPI();
       
       // Cache le splash screen
+      console.log('[DEBUG] hideSplashScreen...');
       this.hideSplashScreen();
       
       this.log('✅ Application prête');
       
     } catch (error) {
-      console.error('❌ Erreur fatale:', error);
+      console.error('❌ Erreur fatale dans init():', error);
+      console.error('Stack trace:', error.stack);
       this.showFatalError(error.message);
     }
   }
@@ -76,8 +85,19 @@ class KhrysalideApp {
    */
   async loadModules() {
     // Vérifie la présence des modules
-    const requiredModules = ['Router', 'Auth', 'SheetsAPI'];
-    const availableModules = requiredModules.filter(m => window[m]);
+    const requiredModules = ['Router', 'Auth'];  // Retiré SheetsAPI car c'est un objet, pas une classe
+    const availableModules = [];
+    
+    requiredModules.forEach(m => {
+      if (window[m]) {
+        availableModules.push(m);
+      }
+    });
+    
+    // Vérifie aussi SheetsAPI séparément
+    if (window.SheetsAPI) {
+      availableModules.push('SheetsAPI');
+    }
     
     this.log('📦 Modules disponibles:', availableModules);
     
@@ -332,11 +352,12 @@ window.app = new KhrysalideApp();
 
 // Initialise après le chargement du DOM
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => window.app.init());
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM chargé, initialisation de l\'app...');
+    window.app.init();
+  });
 } else {
   // DOM déjà chargé
-  window.app.init();
-}
-  // DOM déjà chargé
-  window.app.init();
+  console.log('DOM déjà prêt, initialisation immédiate...');
+  setTimeout(() => window.app.init(), 100); // Petit délai pour laisser les autres scripts se charger
 }
