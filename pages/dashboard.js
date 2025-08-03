@@ -1,7 +1,7 @@
 /**
  * dashboard.js - Page d'accueil / tableau de bord de Khrysalide
  * Affiche le résumé du jour, les actions rapides et les stats
- * Version: 1.2.1
+ * Version: 1.4.2
  */
 
 class DashboardPage {
@@ -51,13 +51,15 @@ class DashboardPage {
           console.error('Erreur lors du chargement du profil:', error);
         }
       } else {
-        // Mode démo
-        this.data.todayCalories = Math.floor(Math.random() * 1500);
+        // Pas de données de démo, valeurs à zéro
+        this.data.todayCalories = 0;
+        this.app.showToast('Impossible de charger les données du jour', 'error');
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données du jour:', error);
-      // Fallback aux données de démo
+      // Pas de fallback aux données de démo
       this.data.todayCalories = 0;
+      this.app.showToast('Erreur lors du chargement des données', 'error');
     }
   }
 
@@ -98,13 +100,13 @@ class DashboardPage {
           this.data.weekAverage = 0;
         }
       } else {
-        // Mode démo
-        this.data.weekAverage = Math.floor(Math.random() * 2000);
-        this.data.weekDays = Math.floor(Math.random() * 7) + 1;
+        // Pas de données de démo, valeurs à zéro
+        this.data.weekAverage = 0;
+        this.data.weekDays = 0;
       }
     } catch (error) {
       console.error('Erreur lors du chargement des stats de la semaine:', error);
-      // Fallback aux données de démo
+      // Pas de fallback aux données de démo
       this.data.weekAverage = 0;
       this.data.weekDays = 0;
     }
