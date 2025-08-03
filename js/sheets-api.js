@@ -233,7 +233,7 @@ class SheetsAPI {
   async readRecipes() {
     console.log('📖 Lecture des recettes...');
     
-    const rows = await this.readRange(this.sheets.recettes, 'A2:BZ100');
+    const rows = await this.readRange(this.sheets.recettes, 'A2:CT100');
     
     return rows.map((row, index) => {
       const recette = {
@@ -767,4 +767,4 @@ window.SheetsAPI = new SheetsAPI();
 // Si l'app est déjà chargée, on peut initialiser
 if (window.app) {
   console.log('App détectée, SheetsAPI prêt à être initialisé');
-}}
+}
