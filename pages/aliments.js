@@ -1,7 +1,7 @@
 /**
  * aliments.js - Page de consultation et recherche des aliments
  * Affiche la liste des ingrédients avec recherche et filtres
- * Version: 1.4.1
+ * Version: 1.4.2
  */
 
 class AlimentsPage {
@@ -76,10 +76,11 @@ class AlimentsPage {
       
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
-      // Données de démonstration en cas d'erreur
-      this.ingredients = this.getDemoIngredients();
-      this.categories = new Set(['all', 'Fruits', 'Légumes', 'Viandes', 'Produits laitiers']);
-      this.fournisseurs = new Set(['all', 'Bio Market', 'Primeur Local', 'Jardin Direct']);
+      // Pas de données de démo, liste vide
+      this.ingredients = [];
+      this.categories = new Set(['all']);
+      this.fournisseurs = new Set(['all']);
+      this.app.showToast('Impossible de charger les aliments', 'error');
     }
   }
 
@@ -899,17 +900,6 @@ class AlimentsPage {
     const modal = document.getElementById('ingredient-modal');
     modal.classList.remove('show');
     this.currentIngredient = null;
-  }
-
-  getDemoIngredients() {
-    return [
-      { id: 1, categorie: 'Fruits', reference: '0001', intitule: 'Pomme', kcal100g: 52, fournisseur: 'Bio Market', prix: 2.50, unite: 'kg', poidsParUnite: 1000 },
-      { id: 2, categorie: 'Fruits', reference: '0002', intitule: 'Banane', kcal100g: 89, fournisseur: 'Primeur Local', prix: 1.80, unite: 'kg', poidsParUnite: 1000 },
-      { id: 3, categorie: 'Légumes', reference: '0003', intitule: 'Carotte', kcal100g: 41, fournisseur: 'Bio Market', prix: 1.20, unite: 'kg', poidsParUnite: 1000 },
-      { id: 4, categorie: 'Légumes', reference: '0004', intitule: 'Tomate', kcal100g: 18, fournisseur: 'Jardin Direct', prix: 3.00, unite: 'kg', poidsParUnite: 1000 },
-      { id: 5, categorie: 'Viandes', reference: '0005', intitule: 'Poulet', kcal100g: 165, fournisseur: 'Boucherie Martin', prix: 8.90, unite: 'kg', poidsParUnite: 1000 },
-      { id: 6, categorie: 'Produits laitiers', reference: '0006', intitule: 'Yaourt nature', kcal100g: 61, fournisseur: 'Laiterie Locale', prix: 0.50, unite: 'pot', poidsParUnite: 125 }
-    ];
   }
 }
 
