@@ -108,13 +108,10 @@ class AlimentsPage {
       return true;
     });
     
-    // Trie par catégorie puis par nom
-    this.filteredIngredients.sort((a, b) => {
-      if (a.categorie !== b.categorie) {
-        return a.categorie.localeCompare(b.categorie);
-      }
-      return a.intitule.localeCompare(b.intitule);
-    });
+    // Trie par ordre alphabétique uniquement
+    this.filteredIngredients.sort((a, b) => 
+      a.intitule.localeCompare(b.intitule)
+    );
   }
 
   render() {
