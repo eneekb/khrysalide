@@ -41,18 +41,27 @@ class RecettesPage {
 
   async loadMenuOptions() {
     try {
-      if (this.app.modules.sheets.readMenuOptions) {
+      if (this.app.modules.sheets && this.app.modules.sheets.readMenuOptions) {
         const options = await this.app.modules.sheets.readMenuOptions();
         this.menuOptions.kcalRanges = options.kcalRanges || [];
         this.menuOptions.prixRanges = options.prixRanges || [];
-        console.log('✅ Options de filtres chargées');
+        console.log('✅ Options de filtres chargées:');
+        console.log('  - Filtres kcal:', this.menuOptions.kcalRanges);
+        console.log('  - Filtres prix:', this.menuOptions.prixRanges);
+      } else {
+        console.warn('⚠️ Impossible de charger les options depuis Sheets');
+        // Valeurs par défaut
+        this.menuOptions = {
+          kcalRanges: ['moins de 500', '500 à 999', '1000 à 1499', 'plus de 1500'],
+          prixRanges: ['moins de 1€', 'de 1 à 1,99 €', 'de 2 à 4,99 €', 'plus de 5 €']
+        };
       }
     } catch (error) {
       console.error('Erreur lors du chargement des menus:', error);
       // Valeurs par défaut
       this.menuOptions = {
-        kcalRanges: ['< 100 kcal', '100-300 kcal', '300-500 kcal', '> 500 kcal'],
-        prixRanges: ['< 5€', '5-10€', '10-20€', '> 20€']
+        kcalRanges: ['moins de 500', '500 à 999', '1000 à 1499', 'plus de 1500'],
+        prixRanges: ['moins de 1€', 'de 1 à 1,99 €', 'de 2 à 4,99 €', 'plus de 5 €']
       };
     }
   }
@@ -116,36 +125,72 @@ class RecettesPage {
   }
 
   matchesKcalRange(kcal, range) {
-    if (range.includes('< 100')) return kcal < 100;
-    if (range.includes('100-300')) return kcal >= 100 && kcal <= 300;
-    if (range.includes('300-500')) return kcal >= 300 && kcal <= 500;
-    if (range.includes('> 500')) return kcal > 500;
+    // Formats spécifiques en français
+    if (range.includes('moins de 500')) return kcal < 500;
+    if (range.includes('500 à 999')) return kcal >= 500 && kcal <= 999;
+    if (range.includes('1000 à 1499')) return kcal >= 1000 && kcal <= 1499;
+    if (range.includes('plus de 1500')) return kcal >= 1500;
     
-    // Format générique "X-Y kcal"
-    const match = range.match(/(\d+)-(\d+)/);
-    if (match) {
-      const min = parseInt(match[1]);
-      const max = parseInt(match[2]);
+    // Formats génériques au cas où
+    // "moins de X"
+    const matchMoins = range.match(/moins de (\d+)/);
+    if (matchMoins) {
+      const max = parseInt(matchMoins[1]);
+      return kcal < max;
+    }
+    
+    // "plus de X"
+    const matchPlus = range.match(/plus de (\d+)/);
+    if (matchPlus) {
+      const min = parseInt(matchPlus[1]);
+      return kcal >= min;
+    }
+    
+    // "X à Y"
+    const matchRange = range.match(/(\d+) à (\d+)/);
+    if (matchRange) {
+      const min = parseInt(matchRange[1]);
+      const max = parseInt(matchRange[2]);
       return kcal >= min && kcal <= max;
     }
     
+    // Si on ne reconnaît pas le format, on ne filtre pas
+    console.warn('Format de filtre kcal non reconnu:', range);
     return true;
   }
 
   matchesPrixRange(prix, range) {
-    if (range.includes('< 5')) return prix < 5;
-    if (range.includes('5-10')) return prix >= 5 && prix <= 10;
-    if (range.includes('10-20')) return prix >= 10 && prix <= 20;
-    if (range.includes('> 20')) return prix > 20;
+    // Formats spécifiques en français avec virgules décimales
+    if (range.includes('moins de 1€')) return prix < 1;
+    if (range.includes('de 1 à 1,99 €')) return prix >= 1 && prix <= 1.99;
+    if (range.includes('de 2 à 4,99 €')) return prix >= 2 && prix <= 4.99;
+    if (range.includes('plus de 5 €')) return prix >= 5;
     
-    // Format générique "X-Y€"
-    const match = range.match(/(\d+)-(\d+)/);
-    if (match) {
-      const min = parseInt(match[1]);
-      const max = parseInt(match[2]);
+    // Formats génériques au cas où
+    // "moins de X€"
+    const matchMoins = range.match(/moins de ([\d,]+)/);
+    if (matchMoins) {
+      const max = parseFloat(matchMoins[1].replace(',', '.'));
+      return prix < max;
+    }
+    
+    // "plus de X €"
+    const matchPlus = range.match(/plus de ([\d,]+)/);
+    if (matchPlus) {
+      const min = parseFloat(matchPlus[1].replace(',', '.'));
+      return prix >= min;
+    }
+    
+    // "de X à Y €" avec virgules décimales
+    const matchRange = range.match(/de ([\d,]+) à ([\d,]+)/);
+    if (matchRange) {
+      const min = parseFloat(matchRange[1].replace(',', '.'));
+      const max = parseFloat(matchRange[2].replace(',', '.'));
       return prix >= min && prix <= max;
     }
     
+    // Si on ne reconnaît pas le format, on ne filtre pas
+    console.warn('Format de filtre prix non reconnu:', range);
     return true;
   }
 
@@ -745,6 +790,7 @@ class RecettesPage {
     const kcalFilter = document.getElementById('kcal-filter');
     if (kcalFilter) {
       kcalFilter.addEventListener('change', (e) => {
+        console.log('Changement filtre kcal:', e.target.value);
         this.selectedKcalRange = e.target.value;
         this.filterRecettes();
         this.updateRecettesList();
@@ -755,6 +801,7 @@ class RecettesPage {
     const prixFilter = document.getElementById('prix-filter');
     if (prixFilter) {
       prixFilter.addEventListener('change', (e) => {
+        console.log('Changement filtre prix:', e.target.value);
         this.selectedPrixRange = e.target.value;
         this.filterRecettes();
         this.updateRecettesList();
