@@ -102,7 +102,18 @@ class SheetsAPI {
     this.checkAuth();
     
     try {
+      // S'assure que le token est à jour
+      const token = window.Auth?.getAccessToken();
+      if (token) {
+        gapi.client.setToken({
+          access_token: token
+        });
+      }
+      
       const fullRange = `'${sheetName}'!${range}`;
+      console.log(`📝 Écriture dans ${fullRange}`);
+      console.log(`📊 Nombre de lignes: ${values.length}, colonnes: ${values[0]?.length}`);
+      
       const response = await gapi.client.sheets.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: fullRange,
@@ -112,10 +123,12 @@ class SheetsAPI {
         }
       });
       
+      console.log('✅ Écriture réussie');
       return response.result;
       
     } catch (error) {
-      console.error(`Erreur lors de l'écriture dans ${sheetName}:`, error);
+      console.error(`❌ Erreur lors de l'écriture dans ${sheetName}:`, error);
+      console.error('Détails de l\'erreur:', error.result?.error);
       throw error;
     }
   }
@@ -127,9 +140,19 @@ class SheetsAPI {
     this.checkAuth();
     
     try {
+      // S'assure que le token est à jour
+      const token = window.Auth?.getAccessToken();
+      if (token) {
+        gapi.client.setToken({
+          access_token: token
+        });
+      }
+      
+      console.log(`📝 Ajout de ${values.length} ligne(s) dans ${sheetName}`);
+      
       const response = await gapi.client.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
-        range: `'${sheetName}'!A:Z`,
+        range: `'${sheetName}'!A:CZ`,  // Étendu pour couvrir toutes les colonnes possibles
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         resource: {
@@ -137,10 +160,12 @@ class SheetsAPI {
         }
       });
       
+      console.log('✅ Ajout réussi');
       return response.result;
       
     } catch (error) {
-      console.error(`Erreur lors de l'ajout dans ${sheetName}:`, error);
+      console.error(`❌ Erreur lors de l'ajout dans ${sheetName}:`, error);
+      console.error('Détails de l\'erreur:', error.result?.error);
       throw error;
     }
   }
@@ -321,6 +346,7 @@ class SheetsAPI {
     
     // Récupère les infos des ingrédients pour les calculs
     const ingredientsData = await this.readIngredients();
+    console.log(`📦 ${ingredientsData.length} ingrédients disponibles pour les calculs`);
     
     const ingredientsRow = [];
     
@@ -329,7 +355,10 @@ class SheetsAPI {
       if (ingredientInfo) {
         // Calcule les valeurs
         const kcal = (ing.quantite * ingredientInfo.kcal100g) / 100;
-        const prix = (ing.quantite * ingredientInfo.prix) / ingredientInfo.poidsParUnite;
+        // Protection contre division par zéro
+        const prix = ingredientInfo.poidsParUnite > 0 
+          ? (ing.quantite * ingredientInfo.prix) / ingredientInfo.poidsParUnite
+          : 0;
         
         poidsTotal += ing.quantite;
         kcalTotal += kcal;
@@ -344,8 +373,12 @@ class SheetsAPI {
           Math.round(kcal),
           prix.toFixed(2)
         );
+      } else {
+        console.warn(`⚠️ Ingrédient non trouvé: ${ing.ref}`);
       }
     }
+    
+    console.log(`📊 Totaux calculés: ${Math.round(poidsTotal)}g, ${Math.round(kcalTotal)} kcal, ${prixTotal.toFixed(2)}€`);
     
     // Remplit jusqu'à 15 ingrédients (90 colonnes)
     while (ingredientsRow.length < 90) {
@@ -364,6 +397,8 @@ class SheetsAPI {
       prixTotal.toFixed(2),
       ...ingredientsRow
     ]];
+    
+    console.log('📤 Nombre de colonnes à ajouter:', values[0].length);
     
     const result = await this.appendRows(this.sheets.recettes, values);
     
@@ -381,6 +416,7 @@ class SheetsAPI {
    */
   async updateRecipe(rowId, recette) {
     console.log('✏️ Mise à jour de la recette ligne', rowId);
+    console.log('📋 Données reçues:', recette);
     
     // Calcule les totaux
     let poidsTotal = 0;
@@ -389,6 +425,7 @@ class SheetsAPI {
     
     // Récupère les infos des ingrédients pour les calculs
     const ingredientsData = await this.readIngredients();
+    console.log(`📦 ${ingredientsData.length} ingrédients disponibles pour les calculs`);
     
     const ingredientsRow = [];
     
@@ -397,7 +434,10 @@ class SheetsAPI {
       if (ingredientInfo) {
         // Calcule les valeurs
         const kcal = (ing.quantite * ingredientInfo.kcal100g) / 100;
-        const prix = (ing.quantite * ingredientInfo.prix) / ingredientInfo.poidsParUnite;
+        // Protection contre division par zéro
+        const prix = ingredientInfo.poidsParUnite > 0 
+          ? (ing.quantite * ingredientInfo.prix) / ingredientInfo.poidsParUnite
+          : 0;
         
         poidsTotal += ing.quantite;
         kcalTotal += kcal;
@@ -412,8 +452,12 @@ class SheetsAPI {
           Math.round(kcal),
           prix.toFixed(2)
         );
+      } else {
+        console.warn(`⚠️ Ingrédient non trouvé: ${ing.ref}`);
       }
     }
+    
+    console.log(`📊 Totaux calculés: ${Math.round(poidsTotal)}g, ${Math.round(kcalTotal)} kcal, ${prixTotal.toFixed(2)}€`);
     
     // Remplit jusqu'à 15 ingrédients (90 colonnes)
     while (ingredientsRow.length < 90) {
@@ -433,9 +477,13 @@ class SheetsAPI {
       ...ingredientsRow
     ]];
     
-    // Détermine la plage (A à CS pour 98 colonnes avec la nouvelle colonne)
-    const range = `A${rowId}:CS${rowId}`;
+    console.log('📤 Nombre de colonnes à écrire:', values[0].length);
+    
+    // Détermine la plage (A à CT pour 98 colonnes avec la nouvelle colonne Validation)
+    const range = `A${rowId}:CT${rowId}`;
     const result = await this.writeRange(this.sheets.recettes, range, values);
+    
+    console.log('✅ Recette mise à jour, ligne', rowId);
     
     // Notifie l'utilisateur
     if (window.app?.showToast) {
