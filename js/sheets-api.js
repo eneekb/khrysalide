@@ -1,7 +1,7 @@
 /**
  * sheets-api.js - Interface avec Google Sheets API
  * Gère la lecture et l'écriture des données dans le spreadsheet
- * Version: 1.4.4
+ * Version: 1.4.5
  */
 
 class SheetsAPI {
@@ -51,14 +51,25 @@ class SheetsAPI {
   }
 
   /**
-   * Convertit une date ISO YYYY-MM-DD vers format français DD/MM/YYYY
-   * Exemple: "2025-07-25" → "25/07/2025"
+   * Convertit une valeur numérique du format français (virgule) vers le format JavaScript (point)
+   * Exemple: "4,50" → 4.50
    */
-  isoToFrenchDate(isoDate) {
-    if (!isoDate) return '';
-    const parts = isoDate.split('-');
-    if (parts.length !== 3) return isoDate;
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  parseFloatFrench(value) {
+    if (!value) return 0;
+    // Si c'est déjà un nombre, on le retourne
+    if (typeof value === 'number') return value;
+    
+    // Convertit la virgule en point et parse
+    const stringValue = value.toString();
+    const normalized = stringValue.replace(',', '.');
+    const result = parseFloat(normalized) || 0;
+    
+    // Log de debug pour les valeurs avec virgules
+    if (stringValue.includes(',')) {
+      console.log(`💰 Conversion prix: "${stringValue}" → ${result}`);
+    }
+    
+    return result;
   }
 
   /**
@@ -191,12 +202,12 @@ class SheetsAPI {
       fournisseur: row[4] || '',
       conditionnement: row[5] || '',
       unite: row[6] || '',
-      poidsParUnite: parseFloat(row[7]) || 0,
-      prix: parseFloat(row[8]) || 0,
-      kcal100g: parseFloat(row[9]) || 0,
-      prixParUnite: parseFloat(row[10]) || 0,
-      kcalParUnite: parseFloat(row[11]) || 0,
-      prixParKcal: parseFloat(row[12]) || 0
+      poidsParUnite: this.parseFloatFrench(row[7]),
+      prix: this.parseFloatFrench(row[8]),
+      kcal100g: this.parseFloatFrench(row[9]),
+      prixParUnite: this.parseFloatFrench(row[10]),
+      kcalParUnite: this.parseFloatFrench(row[11]),
+      prixParKcal: this.parseFloatFrench(row[12])
     })).filter(item => item.intitule); // Filtre les lignes vides
   }
 
@@ -266,11 +277,11 @@ class SheetsAPI {
         numero: row[0] || '',
         intitule: row[1] || '',
         validation: row[2] === 'X' || row[2] === 'x', // Nouvelle colonne C
-        portion: parseFloat(row[3]) || 1,            // Décalé de C à D
+        portion: this.parseFloatFrench(row[3]),      // Décalé de C à D
         instructions: row[4] || '',                   // Décalé de D à E
-        poids: parseFloat(row[5]) || 0,              // Décalé de E à F
-        kcalTotal: parseFloat(row[6]) || 0,          // Décalé de F à G
-        prixTotal: parseFloat(row[7]) || 0,          // Décalé de G à H - PAS D'ARRONDI
+        poids: this.parseFloatFrench(row[5]),        // Décalé de E à F
+        kcalTotal: this.parseFloatFrench(row[6]),    // Décalé de F à G
+        prixTotal: this.parseFloatFrench(row[7]),    // Utilise parseFloatFrench pour gérer les virgules
         ingredients: []
       };
       
@@ -280,10 +291,10 @@ class SheetsAPI {
           recette.ingredients.push({
             ref: row[i],
             nom: row[i + 1],
-            quantite: parseFloat(row[i + 2]) || 0,
+            quantite: this.parseFloatFrench(row[i + 2]),
             unite: row[i + 3] || '',
-            kcal: parseFloat(row[i + 4]) || 0,
-            prix: parseFloat(row[i + 5]) || 0  // PAS D'ARRONDI
+            kcal: this.parseFloatFrench(row[i + 4]),
+            prix: this.parseFloatFrench(row[i + 5])  // Utilise parseFloatFrench pour les prix
           });
         }
       }
@@ -522,8 +533,8 @@ class SheetsAPI {
         repas: row[1] || '',
         type: row[2] || '',
         reference: row[3] || '',
-        quantite: parseFloat(row[4]) || 0,
-        kcal: parseFloat(row[5]) || 0
+        quantite: this.parseFloatFrench(row[4]),
+        kcal: this.parseFloatFrench(row[5])
       };
       
       // Log pour debug (première entrée seulement)
@@ -604,10 +615,10 @@ class SheetsAPI {
     if (userProfile) {
       return {
         email: userProfile[0],
-        objectifKcal: parseFloat(userProfile[1]) || 2000,
+        objectifKcal: this.parseFloatFrench(userProfile[1]) || 2000,
         dateDebut: userProfile[2] || new Date().toISOString().split('T')[0],
-        poidsInitial: parseFloat(userProfile[3]) || null,
-        poidsObjectif: parseFloat(userProfile[4]) || null
+        poidsInitial: userProfile[3] ? this.parseFloatFrench(userProfile[3]) : null,
+        poidsObjectif: userProfile[4] ? this.parseFloatFrench(userProfile[4]) : null
       };
     }
     
