@@ -1157,6 +1157,8 @@ class RecettesPage {
   }
 
   async saveRecette() {
+    console.log('🔄 Début de la sauvegarde de recette...');
+    
     const formData = {
       intitule: document.getElementById('input-intitule').value,
       portion: parseInt(document.getElementById('input-portions').value) || 1,
@@ -1164,6 +1166,8 @@ class RecettesPage {
       validation: document.getElementById('input-validation').checked,
       ingredients: []
     };
+
+    console.log('📝 Données du formulaire:', formData);
 
     // Collecte les ingrédients
     const ingredientRows = document.querySelectorAll('.ingredient-input-row');
@@ -1181,6 +1185,8 @@ class RecettesPage {
       }
     });
 
+    console.log(`📦 ${formData.ingredients.length} ingrédients collectés`);
+
     // Validation
     if (!formData.intitule) {
       this.app.showToast('Le nom de la recette est obligatoire', 'error');
@@ -1195,23 +1201,29 @@ class RecettesPage {
     try {
       if (this.currentRecette) {
         // Mode édition
+        console.log('✏️ Mode édition - Recette ID:', this.currentRecette.id);
         formData.numero = this.currentRecette.numero;
+        console.log('📤 Envoi des données à updateRecipe:', formData);
+        
         await this.app.modules.sheets.updateRecipe(this.currentRecette.id, formData);
         this.app.showToast('Recette mise à jour avec succès', 'success');
       } else {
         // Mode création
+        console.log('➕ Mode création');
         await this.app.modules.sheets.addRecipe(formData);
         this.app.showToast('Recette créée avec succès', 'success');
       }
       
       // Recharge les données
+      console.log('🔄 Rechargement des données...');
       await this.loadRecettes();
       this.filterRecettes();
       this.updateRecettesList();
       
       this.hideModal();
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
+      console.error('❌ Erreur détaillée lors de la sauvegarde:', error);
+      console.error('Stack trace:', error.stack);
       this.app.showToast('Erreur lors de la sauvegarde', 'error');
     }
   }
