@@ -1,7 +1,7 @@
 /**
  * sheets-api.js - Interface avec Google Sheets API
  * Gère la lecture et l'écriture des données dans le spreadsheet
- * Version: 1.4.3
+ * Version: 1.4.4
  */
 
 class SheetsAPI {
@@ -270,7 +270,7 @@ class SheetsAPI {
         instructions: row[4] || '',                   // Décalé de D à E
         poids: parseFloat(row[5]) || 0,              // Décalé de E à F
         kcalTotal: parseFloat(row[6]) || 0,          // Décalé de F à G
-        prixTotal: parseFloat(row[7]) || 0,          // Décalé de G à H
+        prixTotal: parseFloat(row[7]) || 0,          // Décalé de G à H - PAS D'ARRONDI
         ingredients: []
       };
       
@@ -283,7 +283,7 @@ class SheetsAPI {
             quantite: parseFloat(row[i + 2]) || 0,
             unite: row[i + 3] || '',
             kcal: parseFloat(row[i + 4]) || 0,
-            prix: parseFloat(row[i + 5]) || 0
+            prix: parseFloat(row[i + 5]) || 0  // PAS D'ARRONDI
           });
         }
       }
@@ -329,7 +329,7 @@ class SheetsAPI {
 
   /**
    * Ajoute une nouvelle recette
-   * MISE À JOUR : Ajout de la colonne Validation
+   * MISE À JOUR : Préserve les formules en n'écrivant que les données nécessaires
    */
   async addRecipe(recette) {
     console.log('➕ Ajout d\'une recette:', recette.intitule);
@@ -339,44 +339,41 @@ class SheetsAPI {
       recette.numero = await this.getNextRecipeNumber();
     }
     
+    // Pour l'ajout, on doit quand même créer la ligne complète
+    // mais on va laisser les colonnes de formules vides
     const ingredientsRow = [];
     
-    // IMPORTANT: Pour chaque ingrédient, on n'écrit que Ref et Qté
-    // Les colonnes Nom, U, Kcal et Prix contiennent des formules et ne doivent pas être écrasées
     for (const ing of recette.ingredients) {
-      // Pour chaque ingrédient, on ajoute 6 colonnes mais on n'écrit que dans 2
+      // Pour chaque ingrédient, on ajoute 6 colonnes
       ingredientsRow.push(
-        ing.ref,           // Ref (on écrit)
-        '',                // Nom (formule - ne pas écrire)
-        ing.quantite,      // Qté (on écrit)
-        '',                // U (formule - ne pas écrire)
-        '',                // Kcal (formule - ne pas écrire)
-        ''                 // Prix (formule - ne pas écrire)
+        ing.ref,           // Ref
+        '',                // Nom (sera calculé par formule)
+        ing.quantite,      // Qté
+        '',                // U (sera calculé par formule)
+        '',                // Kcal (sera calculé par formule)
+        ''                 // Prix (sera calculé par formule)
       );
     }
-    
-    // Log pour vérifier
-    console.log(`📝 Écriture de ${recette.ingredients.length} ingrédients (Ref et Qté uniquement)`);
     
     // Remplit jusqu'à 15 ingrédients (90 colonnes)
     while (ingredientsRow.length < 90) {
       ingredientsRow.push('');
     }
     
-    // Construit la ligne complète avec la nouvelle colonne Validation
+    // Construit la ligne complète
     const values = [[
       recette.numero,
       recette.intitule,
-      recette.validation ? 'X' : '',  // Nouvelle colonne C
+      recette.validation ? 'X' : '',
       recette.portion || 1,
       recette.instructions || '',
-      '',  // Poids (formule - ne pas écrire)
-      '',  // Kcal total (formule - ne pas écrire)
-      '',  // Prix total (formule - ne pas écrire)
+      '',  // Poids (sera calculé par formule)
+      '',  // Kcal total (sera calculé par formule)
+      '',  // Prix total (sera calculé par formule)
       ...ingredientsRow
     ]];
     
-    console.log('📤 Nombre de colonnes à ajouter:', values[0].length);
+    console.log('📤 Ajout d\'une nouvelle ligne avec', recette.ingredients.length, 'ingrédients');
     
     const result = await this.appendRows(this.sheets.recettes, values);
     
@@ -390,63 +387,119 @@ class SheetsAPI {
 
   /**
    * Met à jour une recette existante
-   * MISE À JOUR : Ajout de la colonne Validation
+   * MISE À JOUR : Écriture sélective pour préserver les formules
    */
   async updateRecipe(rowId, recette) {
     console.log('✏️ Mise à jour de la recette ligne', rowId);
     console.log('📋 Données reçues:', recette);
     
-    const ingredientsRow = [];
+    // Prépare les mises à jour individuelles pour chaque cellule
+    const updates = [];
     
-    // IMPORTANT: Pour chaque ingrédient, on n'écrit que Ref et Qté
-    // Les colonnes Nom, U, Kcal et Prix contiennent des formules et ne doivent pas être écrasées
-    for (const ing of recette.ingredients) {
-      // Pour chaque ingrédient, on ajoute 6 colonnes mais on n'écrit que dans 2
-      ingredientsRow.push(
-        ing.ref,           // Ref (on écrit)
-        '',                // Nom (formule - ne pas écrire)
-        ing.quantite,      // Qté (on écrit)
-        '',                // U (formule - ne pas écrire)
-        '',                // Kcal (formule - ne pas écrire)
-        ''                 // Prix (formule - ne pas écrire)
-      );
+    // Colonnes A à E (données de base)
+    updates.push({
+      range: `'${this.sheets.recettes}'!A${rowId}`,
+      values: [[recette.numero]]
+    });
+    updates.push({
+      range: `'${this.sheets.recettes}'!B${rowId}`,
+      values: [[recette.intitule]]
+    });
+    updates.push({
+      range: `'${this.sheets.recettes}'!C${rowId}`,
+      values: [[recette.validation ? 'X' : '']]
+    });
+    updates.push({
+      range: `'${this.sheets.recettes}'!D${rowId}`,
+      values: [[recette.portion || 1]]
+    });
+    updates.push({
+      range: `'${this.sheets.recettes}'!E${rowId}`,
+      values: [[recette.instructions || '']]
+    });
+    
+    // Pour chaque ingrédient, on n'écrit que Ref (colonne I+n*6) et Qté (colonne K+n*6)
+    for (let i = 0; i < recette.ingredients.length && i < 15; i++) {
+      const ing = recette.ingredients[i];
+      const baseCol = 9 + (i * 6); // Colonne I = 9
+      
+      // Ref
+      updates.push({
+        range: `'${this.sheets.recettes}'!${this.columnToLetter(baseCol)}${rowId}`,
+        values: [[ing.ref]]
+      });
+      
+      // Qté (colonne +2)
+      updates.push({
+        range: `'${this.sheets.recettes}'!${this.columnToLetter(baseCol + 2)}${rowId}`,
+        values: [[ing.quantite]]
+      });
     }
     
-    // Log pour vérifier
-    console.log(`📝 Écriture de ${recette.ingredients.length} ingrédients (Ref et Qté uniquement)`);
-    
-    // Remplit jusqu'à 15 ingrédients (90 colonnes)
-    while (ingredientsRow.length < 90) {
-      ingredientsRow.push('');
+    // Efface les ingrédients supplémentaires si la recette en a moins qu'avant
+    for (let i = recette.ingredients.length; i < 15; i++) {
+      const baseCol = 9 + (i * 6); // Colonne I = 9
+      
+      // Efface Ref
+      updates.push({
+        range: `'${this.sheets.recettes}'!${this.columnToLetter(baseCol)}${rowId}`,
+        values: [['']]
+      });
+      
+      // Efface Qté
+      updates.push({
+        range: `'${this.sheets.recettes}'!${this.columnToLetter(baseCol + 2)}${rowId}`,
+        values: [['']]
+      });
     }
     
-    // Construit la ligne complète avec la nouvelle colonne Validation
-    const values = [[
-      recette.numero,
-      recette.intitule,
-      recette.validation ? 'X' : '',  // Nouvelle colonne C
-      recette.portion || 1,
-      recette.instructions || '',
-      '',  // Poids (formule - ne pas écrire)
-      '',  // Kcal total (formule - ne pas écrire)
-      '',  // Prix total (formule - ne pas écrire)
-      ...ingredientsRow
-    ]];
+    console.log(`📤 ${updates.length} mises à jour à effectuer`);
     
-    console.log('📤 Nombre de colonnes à écrire:', values[0].length);
-    
-    // Détermine la plage (A à CT pour 98 colonnes avec la nouvelle colonne Validation)
-    const range = `A${rowId}:CT${rowId}`;
-    const result = await this.writeRange(this.sheets.recettes, range, values);
-    
-    console.log('✅ Recette mise à jour, ligne', rowId);
-    
-    // Notifie l'utilisateur
-    if (window.app?.showToast) {
-      window.app.showToast('Recette mise à jour !', 'success');
+    try {
+      // S'assure que le token est à jour
+      const token = window.Auth?.getAccessToken();
+      if (token) {
+        gapi.client.setToken({
+          access_token: token
+        });
+      }
+      
+      // Effectue toutes les mises à jour en batch
+      const response = await gapi.client.sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: this.spreadsheetId,
+        resource: {
+          valueInputOption: 'USER_ENTERED',
+          data: updates
+        }
+      });
+      
+      console.log('✅ Recette mise à jour, ligne', rowId);
+      
+      // Notifie l'utilisateur
+      if (window.app?.showToast) {
+        window.app.showToast('Recette mise à jour !', 'success');
+      }
+      
+      return response.result;
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour:', error);
+      throw error;
     }
-    
-    return result;
+  }
+  
+  /**
+   * Convertit un numéro de colonne en lettre(s)
+   * 1 -> A, 2 -> B, ..., 27 -> AA, etc.
+   */
+  columnToLetter(column) {
+    let letter = '';
+    while (column > 0) {
+      const remainder = (column - 1) % 26;
+      letter = String.fromCharCode(65 + remainder) + letter;
+      column = Math.floor((column - 1) / 26);
+    }
+    return letter;
   }
 
   /**
