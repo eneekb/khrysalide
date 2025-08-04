@@ -1,7 +1,7 @@
 /**
  * sheets-api.js - Interface avec Google Sheets API
  * Gère la lecture et l'écriture des données dans le spreadsheet
- * Version: 1.4.2
+ * Version: 1.4.3
  */
 
 class SheetsAPI {
@@ -339,46 +339,24 @@ class SheetsAPI {
       recette.numero = await this.getNextRecipeNumber();
     }
     
-    // Calcule les totaux
-    let poidsTotal = 0;
-    let kcalTotal = 0;
-    let prixTotal = 0;
-    
-    // Récupère les infos des ingrédients pour les calculs
-    const ingredientsData = await this.readIngredients();
-    console.log(`📦 ${ingredientsData.length} ingrédients disponibles pour les calculs`);
-    
     const ingredientsRow = [];
     
+    // IMPORTANT: Pour chaque ingrédient, on n'écrit que Ref et Qté
+    // Les colonnes Nom, U, Kcal et Prix contiennent des formules et ne doivent pas être écrasées
     for (const ing of recette.ingredients) {
-      const ingredientInfo = ingredientsData.find(i => i.reference === ing.ref);
-      if (ingredientInfo) {
-        // Calcule les valeurs
-        const kcal = (ing.quantite * ingredientInfo.kcal100g) / 100;
-        // Protection contre division par zéro
-        const prix = ingredientInfo.poidsParUnite > 0 
-          ? (ing.quantite * ingredientInfo.prix) / ingredientInfo.poidsParUnite
-          : 0;
-        
-        poidsTotal += ing.quantite;
-        kcalTotal += kcal;
-        prixTotal += prix;
-        
-        // Ajoute les 6 colonnes pour cet ingrédient
-        ingredientsRow.push(
-          ing.ref,
-          ingredientInfo.intitule,
-          ing.quantite,
-          ing.unite || ingredientInfo.unite,
-          Math.round(kcal),
-          prix.toFixed(2)
-        );
-      } else {
-        console.warn(`⚠️ Ingrédient non trouvé: ${ing.ref}`);
-      }
+      // Pour chaque ingrédient, on ajoute 6 colonnes mais on n'écrit que dans 2
+      ingredientsRow.push(
+        ing.ref,           // Ref (on écrit)
+        '',                // Nom (formule - ne pas écrire)
+        ing.quantite,      // Qté (on écrit)
+        '',                // U (formule - ne pas écrire)
+        '',                // Kcal (formule - ne pas écrire)
+        ''                 // Prix (formule - ne pas écrire)
+      );
     }
     
-    console.log(`📊 Totaux calculés: ${Math.round(poidsTotal)}g, ${Math.round(kcalTotal)} kcal, ${prixTotal.toFixed(2)}€`);
+    // Log pour vérifier
+    console.log(`📝 Écriture de ${recette.ingredients.length} ingrédients (Ref et Qté uniquement)`);
     
     // Remplit jusqu'à 15 ingrédients (90 colonnes)
     while (ingredientsRow.length < 90) {
@@ -392,9 +370,9 @@ class SheetsAPI {
       recette.validation ? 'X' : '',  // Nouvelle colonne C
       recette.portion || 1,
       recette.instructions || '',
-      Math.round(poidsTotal),
-      Math.round(kcalTotal),
-      prixTotal.toFixed(2),
+      '',  // Poids (formule - ne pas écrire)
+      '',  // Kcal total (formule - ne pas écrire)
+      '',  // Prix total (formule - ne pas écrire)
       ...ingredientsRow
     ]];
     
@@ -418,46 +396,24 @@ class SheetsAPI {
     console.log('✏️ Mise à jour de la recette ligne', rowId);
     console.log('📋 Données reçues:', recette);
     
-    // Calcule les totaux
-    let poidsTotal = 0;
-    let kcalTotal = 0;
-    let prixTotal = 0;
-    
-    // Récupère les infos des ingrédients pour les calculs
-    const ingredientsData = await this.readIngredients();
-    console.log(`📦 ${ingredientsData.length} ingrédients disponibles pour les calculs`);
-    
     const ingredientsRow = [];
     
+    // IMPORTANT: Pour chaque ingrédient, on n'écrit que Ref et Qté
+    // Les colonnes Nom, U, Kcal et Prix contiennent des formules et ne doivent pas être écrasées
     for (const ing of recette.ingredients) {
-      const ingredientInfo = ingredientsData.find(i => i.reference === ing.ref);
-      if (ingredientInfo) {
-        // Calcule les valeurs
-        const kcal = (ing.quantite * ingredientInfo.kcal100g) / 100;
-        // Protection contre division par zéro
-        const prix = ingredientInfo.poidsParUnite > 0 
-          ? (ing.quantite * ingredientInfo.prix) / ingredientInfo.poidsParUnite
-          : 0;
-        
-        poidsTotal += ing.quantite;
-        kcalTotal += kcal;
-        prixTotal += prix;
-        
-        // Ajoute les 6 colonnes pour cet ingrédient
-        ingredientsRow.push(
-          ing.ref,
-          ingredientInfo.intitule,
-          ing.quantite,
-          ing.unite || ingredientInfo.unite,
-          Math.round(kcal),
-          prix.toFixed(2)
-        );
-      } else {
-        console.warn(`⚠️ Ingrédient non trouvé: ${ing.ref}`);
-      }
+      // Pour chaque ingrédient, on ajoute 6 colonnes mais on n'écrit que dans 2
+      ingredientsRow.push(
+        ing.ref,           // Ref (on écrit)
+        '',                // Nom (formule - ne pas écrire)
+        ing.quantite,      // Qté (on écrit)
+        '',                // U (formule - ne pas écrire)
+        '',                // Kcal (formule - ne pas écrire)
+        ''                 // Prix (formule - ne pas écrire)
+      );
     }
     
-    console.log(`📊 Totaux calculés: ${Math.round(poidsTotal)}g, ${Math.round(kcalTotal)} kcal, ${prixTotal.toFixed(2)}€`);
+    // Log pour vérifier
+    console.log(`📝 Écriture de ${recette.ingredients.length} ingrédients (Ref et Qté uniquement)`);
     
     // Remplit jusqu'à 15 ingrédients (90 colonnes)
     while (ingredientsRow.length < 90) {
@@ -471,9 +427,9 @@ class SheetsAPI {
       recette.validation ? 'X' : '',  // Nouvelle colonne C
       recette.portion || 1,
       recette.instructions || '',
-      Math.round(poidsTotal),
-      Math.round(kcalTotal),
-      prixTotal.toFixed(2),
+      '',  // Poids (formule - ne pas écrire)
+      '',  // Kcal total (formule - ne pas écrire)
+      '',  // Prix total (formule - ne pas écrire)
       ...ingredientsRow
     ]];
     
