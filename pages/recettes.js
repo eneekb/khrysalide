@@ -1,827 +1,1264 @@
 /**
- * sheets-api.js - Interface avec Google Sheets API
- * Gère la lecture et l'écriture des données dans le spreadsheet
+ * recettes.js - Page de consultation et gestion des recettes
+ * Affiche la liste des recettes avec leurs détails et gestion de la validation
  * Version: 1.4.4
  */
 
-class SheetsAPI {
-  constructor() {
-    this.spreadsheetId = '1wxppbV1WY6rG3uU-WeNMSoi1UvvAiBfKGXrswJNWCoY';
-    this.isInitialized = false;
-    
-    // Noms des feuilles (exactement comme dans Google Sheets)
-    this.sheets = {
-      ingredients: 'ingredients et preparations de base',
-      recettes: 'recettes',
-      journal: 'Journal',
-      profil: 'Profil'
-    };
+class RecettesPage {
+  constructor(app) {
+    this.app = app;
+    this.recettes = [];
+    this.filteredRecettes = [];
+    this.searchQuery = '';
+    this.selectedKcalRange = 'all';
+    this.selectedPrixRange = 'all';
+    this.menuOptions = { kcalRanges: [], prixRanges: [] };
+    this.currentRecette = null;
+    this.ingredients = []; // Pour la création de recettes
   }
 
-  /**
-   * Initialise l'API Sheets
-   */
   async init() {
-    try {
-      console.log('📊 Initialisation de Sheets API...');
-      
-      // Vérifie que gapi est chargé
-      if (!window.gapi || !window.gapi.client || !window.gapi.client.sheets) {
-        throw new Error('Google Sheets API non chargée');
-      }
-      
-      this.isInitialized = true;
-      console.log('✅ Sheets API initialisée');
-      
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'initialisation de Sheets API:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Convertit une date du format français DD/MM/YYYY vers ISO YYYY-MM-DD
-   * Exemple: "25/07/2025" → "2025-07-25"
-   */
-  frenchToISODate(frenchDate) {
-    if (!frenchDate) return '';
-    const parts = frenchDate.split('/');
-    if (parts.length !== 3) return frenchDate;
-    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-  }
-
-  /**
-   * Convertit une date ISO YYYY-MM-DD vers format français DD/MM/YYYY
-   * Exemple: "2025-07-25" → "25/07/2025"
-   */
-  isoToFrenchDate(isoDate) {
-    if (!isoDate) return '';
-    const parts = isoDate.split('-');
-    if (parts.length !== 3) return isoDate;
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  }
-
-  /**
-   * Vérifie l'authentification avant chaque appel
-   */
-  checkAuth() {
-    if (!window.Auth || !window.Auth.isAuthenticated()) {
-      throw new Error('Non authentifié');
-    }
-    
-    if (!this.isInitialized) {
-      throw new Error('Sheets API non initialisée');
-    }
-  }
-
-  /**
-   * Lit les données d'une plage
-   */
-  async readRange(sheetName, range) {
-    this.checkAuth();
+    console.log('🍽️ Initialisation de la page Recettes');
     
     try {
-      const fullRange = `'${sheetName}'!${range}`;
-      const response = await gapi.client.sheets.spreadsheets.values.get({
-        spreadsheetId: this.spreadsheetId,
-        range: fullRange
-      });
+      // Charge les options des menus déroulants
+      await this.loadMenuOptions();
       
-      return response.result.values || [];
+      // Charge les ingrédients (pour la création de recettes)
+      await this.loadIngredients();
+      
+      // Charge les recettes depuis Sheets
+      await this.loadRecettes();
+      
+      // Applique le filtre initial
+      this.filterRecettes();
       
     } catch (error) {
-      console.error(`Erreur lors de la lecture de ${sheetName}:`, error);
-      throw error;
+      console.error('Erreur lors du chargement des recettes:', error);
+      this.app.showToast('Erreur lors du chargement des recettes', 'error');
     }
   }
 
-  /**
-   * Écrit des données dans une plage
-   */
-  async writeRange(sheetName, range, values) {
-    this.checkAuth();
-    
+  async loadMenuOptions() {
     try {
-      // S'assure que le token est à jour
-      const token = window.Auth?.getAccessToken();
-      if (token) {
-        gapi.client.setToken({
-          access_token: token
-        });
+      if (this.app.modules.sheets && this.app.modules.sheets.readMenuOptions) {
+        const options = await this.app.modules.sheets.readMenuOptions();
+        this.menuOptions.kcalRanges = options.kcalRanges || [];
+        this.menuOptions.prixRanges = options.prixRanges || [];
+        console.log('✅ Options de filtres chargées:');
+        console.log('  - Filtres kcal:', this.menuOptions.kcalRanges);
+        console.log('  - Filtres prix:', this.menuOptions.prixRanges);
+      } else {
+        console.warn('⚠️ Impossible de charger les options depuis Sheets');
+        // Valeurs par défaut
+        this.menuOptions = {
+          kcalRanges: ['moins de 500', '500 à 999', '1000 à 1499', 'plus de 1500'],
+          prixRanges: ['moins de 1€', 'de 1 à 1,99 €', 'de 2 à 4,99 €', 'plus de 5 €']
+        };
       }
-      
-      const fullRange = `'${sheetName}'!${range}`;
-      console.log(`📝 Écriture dans ${fullRange}`);
-      console.log(`📊 Nombre de lignes: ${values.length}, colonnes: ${values[0]?.length}`);
-      
-      const response = await gapi.client.sheets.spreadsheets.values.update({
-        spreadsheetId: this.spreadsheetId,
-        range: fullRange,
-        valueInputOption: 'USER_ENTERED',
-        resource: {
-          values: values
-        }
-      });
-      
-      console.log('✅ Écriture réussie');
-      return response.result;
-      
     } catch (error) {
-      console.error(`❌ Erreur lors de l'écriture dans ${sheetName}:`, error);
-      console.error('Détails de l\'erreur:', error.result?.error);
-      throw error;
-    }
-  }
-
-  /**
-   * Ajoute des lignes à la fin d'une feuille
-   */
-  async appendRows(sheetName, values) {
-    this.checkAuth();
-    
-    try {
-      // S'assure que le token est à jour
-      const token = window.Auth?.getAccessToken();
-      if (token) {
-        gapi.client.setToken({
-          access_token: token
-        });
-      }
-      
-      console.log(`📝 Ajout de ${values.length} ligne(s) dans ${sheetName}`);
-      
-      const response = await gapi.client.sheets.spreadsheets.values.append({
-        spreadsheetId: this.spreadsheetId,
-        range: `'${sheetName}'!A:CZ`,  // Étendu pour couvrir toutes les colonnes possibles
-        valueInputOption: 'USER_ENTERED',
-        insertDataOption: 'INSERT_ROWS',
-        resource: {
-          values: values
-        }
-      });
-      
-      console.log('✅ Ajout réussi');
-      return response.result;
-      
-    } catch (error) {
-      console.error(`❌ Erreur lors de l'ajout dans ${sheetName}:`, error);
-      console.error('Détails de l\'erreur:', error.result?.error);
-      throw error;
-    }
-  }
-
-  // ========================================
-  // MÉTHODES SPÉCIFIQUES PAR FEUILLE
-  // ========================================
-
-  /**
-   * Lit tous les ingrédients
-   */
-  async readIngredients() {
-    console.log('📖 Lecture des ingrédients...');
-    
-    const rows = await this.readRange(this.sheets.ingredients, 'A2:M1000');
-    
-    return rows.map((row, index) => ({
-      id: index + 2, // Numéro de ligne (commence à 2)
-      categorie: row[0] || '',
-      reference: row[1] || '',
-      intitule: row[2] || '',
-      precisions: row[3] || '',
-      fournisseur: row[4] || '',
-      conditionnement: row[5] || '',
-      unite: row[6] || '',
-      poidsParUnite: parseFloat(row[7]) || 0,
-      prix: parseFloat(row[8]) || 0,
-      kcal100g: parseFloat(row[9]) || 0,
-      prixParUnite: parseFloat(row[10]) || 0,
-      kcalParUnite: parseFloat(row[11]) || 0,
-      prixParKcal: parseFloat(row[12]) || 0
-    })).filter(item => item.intitule); // Filtre les lignes vides
-  }
-
-  /**
-   * Ajoute un nouvel ingrédient
-   */
-  async addIngredient(ingredient) {
-    console.log('➕ Ajout d\'un ingrédient:', ingredient.intitule);
-    
-    const values = [[
-      ingredient.categorie || '',
-      ingredient.reference || '',
-      ingredient.intitule || '',
-      ingredient.precisions || '',
-      ingredient.fournisseur || '',
-      ingredient.conditionnement || '',
-      ingredient.unite || '',
-      ingredient.poidsParUnite || '',
-      ingredient.prix || '',
-      ingredient.kcal100g || '',
-      ingredient.prixParUnite || '',
-      ingredient.kcalParUnite || '',
-      ingredient.prixParKcal || ''
-    ]];
-    
-    return await this.appendRows(this.sheets.ingredients, values);
-  }
-
-  /**
-   * Met à jour un ingrédient existant
-   */
-  async updateIngredient(rowId, ingredient) {
-    console.log('✏️ Mise à jour de l\'ingrédient ligne', rowId);
-    
-    const values = [[
-      ingredient.categorie || '',
-      ingredient.reference || '',
-      ingredient.intitule || '',
-      ingredient.precisions || '',
-      ingredient.fournisseur || '',
-      ingredient.conditionnement || '',
-      ingredient.unite || '',
-      ingredient.poidsParUnite || '',
-      ingredient.prix || '',
-      ingredient.kcal100g || '',
-      ingredient.prixParUnite || '',
-      ingredient.kcalParUnite || '',
-      ingredient.prixParKcal || ''
-    ]];
-    
-    const range = `A${rowId}:M${rowId}`;
-    return await this.writeRange(this.sheets.ingredients, range, values);
-  }
-
-  /**
-   * Lit toutes les recettes
-   * MISE À JOUR : Ajout de la colonne Validation (colonne C)
-   */
-  async readRecipes() {
-    console.log('📖 Lecture des recettes...');
-    
-    const rows = await this.readRange(this.sheets.recettes, 'A2:CT100');
-    
-    return rows.map((row, index) => {
-      const recette = {
-        id: index + 2,
-        numero: row[0] || '',
-        intitule: row[1] || '',
-        validation: row[2] === 'X' || row[2] === 'x', // Nouvelle colonne C
-        portion: parseFloat(row[3]) || 1,            // Décalé de C à D
-        instructions: row[4] || '',                   // Décalé de D à E
-        poids: parseFloat(row[5]) || 0,              // Décalé de E à F
-        kcalTotal: parseFloat(row[6]) || 0,          // Décalé de F à G
-        prixTotal: parseFloat(row[7]) || 0,          // Décalé de G à H - PAS D'ARRONDI
-        ingredients: []
-      };
-      
-      // Parse les ingrédients (colonnes I et suivantes, par groupes de 6)
-      for (let i = 8; i < row.length; i += 6) {  // Décalé de 7 à 8
-        if (row[i] && row[i + 1]) { // Si ref et nom existent
-          recette.ingredients.push({
-            ref: row[i],
-            nom: row[i + 1],
-            quantite: parseFloat(row[i + 2]) || 0,
-            unite: row[i + 3] || '',
-            kcal: parseFloat(row[i + 4]) || 0,
-            prix: parseFloat(row[i + 5]) || 0  // PAS D'ARRONDI
-          });
-        }
-      }
-      
-      return recette;
-    }).filter(r => r.intitule); // Filtre les lignes vides
-  }
-
-  /**
-   * Génère le prochain numéro de recette
-   * Format: R001, R002, etc.
-   */
-  async getNextRecipeNumber() {
-    console.log('🔢 Génération du prochain numéro de recette...');
-    
-    try {
-      const recettes = await this.readRecipes();
-      
-      // Extrait tous les numéros
-      const numbers = recettes
-        .map(r => {
-          const match = r.numero?.match(/R(\d+)/);
-          return match ? parseInt(match[1]) : 0;
-        })
-        .filter(n => !isNaN(n));
-      
-      // Trouve le plus grand numéro
-      const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
-      
-      // Génère le prochain numéro
-      const nextNumber = maxNumber + 1;
-      const nextRef = `R${nextNumber.toString().padStart(3, '0')}`;
-      
-      console.log(`✅ Prochain numéro: ${nextRef}`);
-      return nextRef;
-      
-    } catch (error) {
-      console.error('Erreur lors de la génération du numéro:', error);
-      // Fallback
-      return `R${Date.now().toString().slice(-3)}`;
-    }
-  }
-
-  /**
-   * Ajoute une nouvelle recette
-   * MISE À JOUR : Préserve les formules en n'écrivant que les données nécessaires
-   */
-  async addRecipe(recette) {
-    console.log('➕ Ajout d\'une recette:', recette.intitule);
-    
-    // Génère le numéro si pas fourni
-    if (!recette.numero) {
-      recette.numero = await this.getNextRecipeNumber();
-    }
-    
-    // Pour l'ajout, on doit quand même créer la ligne complète
-    // mais on va laisser les colonnes de formules vides
-    const ingredientsRow = [];
-    
-    for (const ing of recette.ingredients) {
-      // Pour chaque ingrédient, on ajoute 6 colonnes
-      ingredientsRow.push(
-        ing.ref,           // Ref
-        '',                // Nom (sera calculé par formule)
-        ing.quantite,      // Qté
-        '',                // U (sera calculé par formule)
-        '',                // Kcal (sera calculé par formule)
-        ''                 // Prix (sera calculé par formule)
-      );
-    }
-    
-    // Remplit jusqu'à 15 ingrédients (90 colonnes)
-    while (ingredientsRow.length < 90) {
-      ingredientsRow.push('');
-    }
-    
-    // Construit la ligne complète
-    const values = [[
-      recette.numero,
-      recette.intitule,
-      recette.validation ? 'X' : '',
-      recette.portion || 1,
-      recette.instructions || '',
-      '',  // Poids (sera calculé par formule)
-      '',  // Kcal total (sera calculé par formule)
-      '',  // Prix total (sera calculé par formule)
-      ...ingredientsRow
-    ]];
-    
-    console.log('📤 Ajout d\'une nouvelle ligne avec', recette.ingredients.length, 'ingrédients');
-    
-    const result = await this.appendRows(this.sheets.recettes, values);
-    
-    // Notifie l'utilisateur
-    if (window.app?.showToast) {
-      window.app.showToast('Recette ajoutée avec succès !', 'success');
-    }
-    
-    return result;
-  }
-
-  /**
-   * Met à jour une recette existante
-   * MISE À JOUR : Écriture sélective pour préserver les formules
-   */
-  async updateRecipe(rowId, recette) {
-    console.log('✏️ Mise à jour de la recette ligne', rowId);
-    console.log('📋 Données reçues:', recette);
-    
-    // Prépare les mises à jour individuelles pour chaque cellule
-    const updates = [];
-    
-    // Colonnes A à E (données de base)
-    updates.push({
-      range: `'${this.sheets.recettes}'!A${rowId}`,
-      values: [[recette.numero]]
-    });
-    updates.push({
-      range: `'${this.sheets.recettes}'!B${rowId}`,
-      values: [[recette.intitule]]
-    });
-    updates.push({
-      range: `'${this.sheets.recettes}'!C${rowId}`,
-      values: [[recette.validation ? 'X' : '']]
-    });
-    updates.push({
-      range: `'${this.sheets.recettes}'!D${rowId}`,
-      values: [[recette.portion || 1]]
-    });
-    updates.push({
-      range: `'${this.sheets.recettes}'!E${rowId}`,
-      values: [[recette.instructions || '']]
-    });
-    
-    // Pour chaque ingrédient, on n'écrit que Ref (colonne I+n*6) et Qté (colonne K+n*6)
-    for (let i = 0; i < recette.ingredients.length && i < 15; i++) {
-      const ing = recette.ingredients[i];
-      const baseCol = 9 + (i * 6); // Colonne I = 9
-      
-      // Ref
-      updates.push({
-        range: `'${this.sheets.recettes}'!${this.columnToLetter(baseCol)}${rowId}`,
-        values: [[ing.ref]]
-      });
-      
-      // Qté (colonne +2)
-      updates.push({
-        range: `'${this.sheets.recettes}'!${this.columnToLetter(baseCol + 2)}${rowId}`,
-        values: [[ing.quantite]]
-      });
-    }
-    
-    // Efface les ingrédients supplémentaires si la recette en a moins qu'avant
-    for (let i = recette.ingredients.length; i < 15; i++) {
-      const baseCol = 9 + (i * 6); // Colonne I = 9
-      
-      // Efface Ref
-      updates.push({
-        range: `'${this.sheets.recettes}'!${this.columnToLetter(baseCol)}${rowId}`,
-        values: [['']]
-      });
-      
-      // Efface Qté
-      updates.push({
-        range: `'${this.sheets.recettes}'!${this.columnToLetter(baseCol + 2)}${rowId}`,
-        values: [['']]
-      });
-    }
-    
-    console.log(`📤 ${updates.length} mises à jour à effectuer`);
-    
-    try {
-      // S'assure que le token est à jour
-      const token = window.Auth?.getAccessToken();
-      if (token) {
-        gapi.client.setToken({
-          access_token: token
-        });
-      }
-      
-      // Effectue toutes les mises à jour en batch
-      const response = await gapi.client.sheets.spreadsheets.values.batchUpdate({
-        spreadsheetId: this.spreadsheetId,
-        resource: {
-          valueInputOption: 'USER_ENTERED',
-          data: updates
-        }
-      });
-      
-      console.log('✅ Recette mise à jour, ligne', rowId);
-      
-      // Notifie l'utilisateur
-      if (window.app?.showToast) {
-        window.app.showToast('Recette mise à jour !', 'success');
-      }
-      
-      return response.result;
-      
-    } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Convertit un numéro de colonne en lettre(s)
-   * 1 -> A, 2 -> B, ..., 27 -> AA, etc.
-   */
-  columnToLetter(column) {
-    let letter = '';
-    while (column > 0) {
-      const remainder = (column - 1) % 26;
-      letter = String.fromCharCode(65 + remainder) + letter;
-      column = Math.floor((column - 1) / 26);
-    }
-    return letter;
-  }
-
-  /**
-   * Lit le journal pour une période donnée
-   * @param {string} startDate - Date de début (YYYY-MM-DD) ou null pour tout
-   * @param {string} endDate - Date de fin (YYYY-MM-DD) ou null pour tout
-   * @returns {Array} Liste des entrées du journal
-   */
-  async readJournal(startDate = null, endDate = null) {
-    console.log(`📖 Lecture du journal${startDate ? ` du ${startDate}` : ''}${endDate ? ` au ${endDate}` : ''}`);
-    
-    const rows = await this.readRange(this.sheets.journal, 'A2:F1000');
-    console.log(`📋 ${rows.length} lignes trouvées dans le journal`);
-    
-    return rows.map((row, index) => {
-      const entry = {
-        id: index + 2,
-        date: this.frenchToISODate(row[0] || ''), // Convertit DD/MM/YYYY en YYYY-MM-DD
-        dateFrench: row[0] || '', // Garde le format original
-        repas: row[1] || '',
-        type: row[2] || '',
-        reference: row[3] || '',
-        quantite: parseFloat(row[4]) || 0,
-        kcal: parseFloat(row[5]) || 0
-      };
-      
-      // Log pour debug (première entrée seulement)
-      if (index === 0 && row[0]) {
-        console.log(`📅 Exemple de conversion: ${row[0]} → ${entry.date}`);
-      }
-      
-      return entry;
-    }).filter(entry => {
-      if (!entry.date) return false;
-      if (!startDate && !endDate) return true;
-      
-      const entryDate = new Date(entry.date);
-      const start = startDate ? new Date(startDate) : new Date('1900-01-01');
-      const end = endDate ? new Date(endDate) : new Date('2100-01-01');
-      
-      return entryDate >= start && entryDate <= end;
-    });
-  }
-
-  /**
-   * Ajoute une entrée au journal
-   */
-  async addJournalEntry(entry) {
-    console.log('➕ Ajout au journal:', entry);
-    
-    // Convertit la date au format français pour l'écriture
-    const dateFrench = entry.date ? this.isoToFrenchDate(entry.date) : this.isoToFrenchDate(new Date().toISOString().split('T')[0]);
-    
-    const values = [[
-      dateFrench,
-      entry.repas || '',
-      entry.type || '',
-      entry.reference || '',
-      entry.quantite || '',
-      entry.kcal || ''
-    ]];
-    
-    const result = await this.appendRows(this.sheets.journal, values);
-    
-    // Notifie l'utilisateur
-    if (window.app?.showToast) {
-      window.app.showToast('Repas enregistré !', 'success');
-    }
-    
-    return result;
-  }
-
-  /**
-   * Supprime une entrée du journal
-   */
-  async deleteJournalEntry(rowId) {
-    console.log('🗑️ Suppression de l\'entrée:', rowId);
-    
-    // Pour supprimer, on efface le contenu de la ligne
-    const range = `A${rowId}:F${rowId}`;
-    const values = [['', '', '', '', '', '']];
-    
-    return await this.writeRange(this.sheets.journal, range, values);
-  }
-
-  /**
-   * Lit le profil de l'utilisateur
-   */
-  async readProfile() {
-    console.log('📖 Lecture du profil...');
-    
-    const userEmail = window.Auth?.getCurrentUser()?.email;
-    if (!userEmail) {
-      throw new Error('Email utilisateur non disponible');
-    }
-    
-    const rows = await this.readRange(this.sheets.profil, 'A2:E10');
-    
-    // Cherche le profil de l'utilisateur actuel
-    const userProfile = rows.find(row => row[0] === userEmail);
-    
-    if (userProfile) {
-      return {
-        email: userProfile[0],
-        objectifKcal: parseFloat(userProfile[1]) || 2000,
-        dateDebut: userProfile[2] || new Date().toISOString().split('T')[0],
-        poidsInitial: parseFloat(userProfile[3]) || null,
-        poidsObjectif: parseFloat(userProfile[4]) || null
+      console.error('Erreur lors du chargement des menus:', error);
+      // Valeurs par défaut
+      this.menuOptions = {
+        kcalRanges: ['moins de 500', '500 à 999', '1000 à 1499', 'plus de 1500'],
+        prixRanges: ['moins de 1€', 'de 1 à 1,99 €', 'de 2 à 4,99 €', 'plus de 5 €']
       };
     }
-    
-    // Profil par défaut si non trouvé
-    return {
-      email: userEmail,
-      objectifKcal: 2000,
-      dateDebut: new Date().toISOString().split('T')[0],
-      poidsInitial: null,
-      poidsObjectif: null
-    };
   }
 
-  /**
-   * Met à jour le profil de l'utilisateur
-   */
-  async updateProfile(profile) {
-    console.log('💾 Mise à jour du profil:', profile);
-    
-    const userEmail = window.Auth?.getCurrentUser()?.email;
-    if (!userEmail) {
-      throw new Error('Email utilisateur non disponible');
-    }
-    
-    // Cherche si le profil existe déjà
-    const rows = await this.readRange(this.sheets.profil, 'A2:A10');
-    const existingRow = rows.findIndex(row => row[0] === userEmail);
-    
-    const values = [[
-      userEmail,
-      profile.objectifKcal || 2000,
-      profile.dateDebut || new Date().toISOString().split('T')[0],
-      profile.poidsInitial || '',
-      profile.poidsObjectif || ''
-    ]];
-    
-    if (existingRow >= 0) {
-      // Mise à jour
-      const range = `A${existingRow + 2}:E${existingRow + 2}`;
-      return await this.writeRange(this.sheets.profil, range, values);
-    } else {
-      // Ajout
-      return await this.appendRows(this.sheets.profil, values);
-    }
-  }
-
-  /**
-   * Méthode batch pour optimiser les lectures multiples
-   */
-  async batchRead(requests) {
-    this.checkAuth();
-    
+  async loadIngredients() {
     try {
-      const response = await gapi.client.sheets.spreadsheets.values.batchGet({
-        spreadsheetId: this.spreadsheetId,
-        ranges: requests.map(r => `'${r.sheet}'!${r.range}`)
-      });
+      this.ingredients = await this.app.modules.sheets.readIngredients();
+      // Trie les ingrédients par ordre alphabétique
+      this.ingredients.sort((a, b) => a.intitule.localeCompare(b.intitule));
+      console.log(`✅ ${this.ingredients.length} ingrédients disponibles`);
+    } catch (error) {
+      console.error('Erreur lors du chargement des ingrédients:', error);
+      this.ingredients = [];
+    }
+  }
+
+  async loadRecettes() {
+    try {
+      this.recettes = await this.app.modules.sheets.readRecipes();
+      console.log(`✅ ${this.recettes.length} recettes chargées`);
       
-      return response.result.valueRanges;
+      // Trie par ordre alphabétique
+      this.recettes.sort((a, b) => a.intitule.localeCompare(b.intitule));
       
     } catch (error) {
-      console.error('Erreur lors de la lecture batch:', error);
-      throw error;
+      console.error('Erreur lors du chargement:', error);
+      // Pas de données de démo, liste vide
+      this.recettes = [];
+      this.app.showToast('Impossible de charger les recettes', 'error');
     }
   }
 
-  /**
-   * Recherche des ingrédients par nom
-   */
-  async searchIngredients(query) {
-    const allIngredients = await this.readIngredients();
-    const lowerQuery = query.toLowerCase();
+  filterRecettes() {
+    const query = this.searchQuery.toLowerCase();
     
-    return allIngredients.filter(ing => 
-      ing.intitule.toLowerCase().includes(lowerQuery) ||
-      ing.categorie.toLowerCase().includes(lowerQuery)
+    this.filteredRecettes = this.recettes.filter(recette => {
+      // Filtre par recherche
+      if (query) {
+        const matchName = recette.intitule.toLowerCase().includes(query);
+        const matchIngredients = recette.ingredients.some(ing => 
+          ing.nom.toLowerCase().includes(query)
+        );
+        if (!matchName && !matchIngredients) return false;
+      }
+      
+      // Filtre par calories
+      if (this.selectedKcalRange !== 'all') {
+        const kcal = recette.kcalTotal;
+        if (!this.matchesKcalRange(kcal, this.selectedKcalRange)) return false;
+      }
+      
+      // Filtre par prix
+      if (this.selectedPrixRange !== 'all') {
+        const prix = recette.prixTotal;
+        if (!this.matchesPrixRange(prix, this.selectedPrixRange)) return false;
+      }
+      
+      return true;
+    });
+    
+    // Trie par nom alphabétique
+    this.filteredRecettes.sort((a, b) => 
+      a.intitule.localeCompare(b.intitule)
     );
   }
 
-  /**
-   * Calcule les totaux du jour
-   * @param {string} date - Date au format ISO (YYYY-MM-DD)
-   * @returns {object} Totaux par repas et total général
-   */
-  async getDayTotals(date) {
-    const totals = {
-      total: 0,
-      petitDejeuner: 0,
-      dejeuner: 0,
-      diner: 0,
-      collation: 0
-    };
+  matchesKcalRange(kcal, range) {
+    // Formats spécifiques en français
+    if (range.includes('moins de 500')) return kcal < 500;
+    if (range.includes('500 à 999')) return kcal >= 500 && kcal <= 999;
+    if (range.includes('1000 à 1499')) return kcal >= 1000 && kcal <= 1499;
+    if (range.includes('plus de 1500')) return kcal >= 1500;
     
-    try {
-      const dayEntries = await this.readJournal(date, date);
-      console.log(`📊 ${dayEntries.length} entrées trouvées pour le ${date}`);
+    // Formats génériques au cas où
+    // "moins de X"
+    const matchMoins = range.match(/moins de (\d+)/);
+    if (matchMoins) {
+      const max = parseInt(matchMoins[1]);
+      return kcal < max;
+    }
+    
+    // "plus de X"
+    const matchPlus = range.match(/plus de (\d+)/);
+    if (matchPlus) {
+      const min = parseInt(matchPlus[1]);
+      return kcal >= min;
+    }
+    
+    // "X à Y"
+    const matchRange = range.match(/(\d+) à (\d+)/);
+    if (matchRange) {
+      const min = parseInt(matchRange[1]);
+      const max = parseInt(matchRange[2]);
+      return kcal >= min && kcal <= max;
+    }
+    
+    // Si on ne reconnaît pas le format, on ne filtre pas
+    console.warn('Format de filtre kcal non reconnu:', range);
+    return true;
+  }
+
+  matchesPrixRange(prix, range) {
+    // Formats spécifiques en français avec virgules décimales
+    if (range.includes('moins de 1€')) return prix < 1;
+    if (range.includes('de 1 à 1,99 €')) return prix >= 1 && prix <= 1.99;
+    if (range.includes('de 2 à 4,99 €')) return prix >= 2 && prix <= 4.99;
+    if (range.includes('plus de 5 €')) return prix >= 5;
+    
+    // Formats génériques au cas où
+    // "moins de X€"
+    const matchMoins = range.match(/moins de ([\d,]+)/);
+    if (matchMoins) {
+      const max = parseFloat(matchMoins[1].replace(',', '.'));
+      return prix < max;
+    }
+    
+    // "plus de X €"
+    const matchPlus = range.match(/plus de ([\d,]+)/);
+    if (matchPlus) {
+      const min = parseFloat(matchPlus[1].replace(',', '.'));
+      return prix >= min;
+    }
+    
+    // "de X à Y €" avec virgules décimales
+    const matchRange = range.match(/de ([\d,]+) à ([\d,]+)/);
+    if (matchRange) {
+      const min = parseFloat(matchRange[1].replace(',', '.'));
+      const max = parseFloat(matchRange[2].replace(',', '.'));
+      return prix >= min && prix <= max;
+    }
+    
+    // Si on ne reconnaît pas le format, on ne filtre pas
+    console.warn('Format de filtre prix non reconnu:', range);
+    return true;
+  }
+
+  render() {
+    return `
+      <div class="page recettes-page">
+        <!-- Header avec recherche -->
+        <div class="search-header">
+          <div class="header-row">
+            <h1 class="page-title">Recettes</h1>
+            <button class="btn btn-primary btn-small" id="add-recette">
+              Ajouter
+            </button>
+          </div>
+          
+          <div class="search-container">
+            <input 
+              type="text" 
+              class="search-input" 
+              placeholder="Rechercher une recette..."
+              value="${this.searchQuery}"
+              id="search-recettes"
+            >
+            <i class="search-icon">🔍</i>
+          </div>
+          
+          <!-- Filtres -->
+          <div class="filters-container">
+            <select class="filter-select" id="kcal-filter">
+              <option value="all">Toutes les calories</option>
+              ${this.menuOptions.kcalRanges.map(range => `
+                <option value="${range}" ${this.selectedKcalRange === range ? 'selected' : ''}>
+                  ${range}
+                </option>
+              `).join('')}
+            </select>
+            
+            <select class="filter-select" id="prix-filter">
+              <option value="all">Tous les prix</option>
+              ${this.menuOptions.prixRanges.map(range => `
+                <option value="${range}" ${this.selectedPrixRange === range ? 'selected' : ''}>
+                  ${range}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+        </div>
+
+        <!-- Nombre de résultats -->
+        <div class="results-count">
+          ${this.filteredRecettes.length} recette${this.filteredRecettes.length > 1 ? 's' : ''} trouvée${this.filteredRecettes.length > 1 ? 's' : ''}
+        </div>
+
+        <!-- Liste des recettes -->
+        <div class="recettes-list">
+          ${this.renderRecettesList()}
+        </div>
+      </div>
+
+      <!-- Modal pour les détails/édition -->
+      <div class="modal" id="recette-modal">
+        <div class="modal-content modal-large">
+          <div class="modal-header">
+            <h2 class="modal-title" id="modal-title">Détails de la recette</h2>
+            <button class="modal-close" id="modal-close">✕</button>
+          </div>
+          <div class="modal-body" id="modal-body">
+            <!-- Le contenu sera injecté dynamiquement -->
+          </div>
+        </div>
+      </div>
+
+      <style>
+        .recettes-page {
+          padding-bottom: 80px;
+        }
+
+        .search-header {
+          background: white;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          padding: 15px 15px 10px;
+          border-bottom: 1px solid #f0f0f0;
+        }
+
+        .header-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        .page-title {
+          font-size: 24px;
+          font-weight: 600;
+          color: #333;
+          margin: 0;
+        }
+
+        .search-container {
+          position: relative;
+          margin-bottom: 12px;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 12px 45px 12px 16px;
+          border: 2px solid #eee;
+          border-radius: 25px;
+          font-size: 16px;
+          transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+          outline: none;
+          border-color: var(--color-mint);
+          box-shadow: 0 0 0 3px rgba(82, 209, 179, 0.1);
+        }
+
+        .search-icon {
+          position: absolute;
+          right: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 20px;
+          pointer-events: none;
+        }
+
+        .filters-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin-bottom: 4px;
+        }
+
+        .filter-select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 2px solid #eee;
+          border-radius: 20px;
+          font-size: 14px;
+          background: white;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .filter-select:focus {
+          outline: none;
+          border-color: var(--color-mint);
+        }
+
+        .results-count {
+          padding: 8px 20px;
+          font-size: 14px;
+          color: #666;
+          background: #fafafa;
+        }
+
+        .recettes-list {
+          padding: 10px;
+        }
+
+        .recette-card {
+          background: white;
+          border-radius: 16px;
+          padding: 16px;
+          margin-bottom: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          transition: all 0.3s ease;
+          cursor: pointer;
+          position: relative;
+        }
+
+        .recette-card:active {
+          transform: scale(0.98);
+        }
+
+        .recette-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 8px;
+        }
+
+        .recette-name {
+          font-weight: 600;
+          color: #333;
+          font-size: 18px;
+          flex: 1;
+          margin-right: 12px;
+        }
+
+        .recette-validation {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          color: var(--color-mint);
+          font-size: 20px;
+        }
+
+        .recette-kcal {
+          background: var(--color-peach);
+          color: var(--color-coral);
+          padding: 8px 12px;
+          border-radius: 12px;
+          font-weight: 600;
+          font-size: 14px;
+          white-space: nowrap;
+          margin-right: 32px;
+        }
+
+        .recette-details {
+          font-size: 14px;
+          color: #666;
+          margin-top: 4px;
+        }
+
+        .recette-portions {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          margin-right: 16px;
+        }
+
+        .recette-prix {
+          color: var(--color-mint);
+          font-weight: 500;
+        }
+
+        .recette-ingredients-preview {
+          font-size: 13px;
+          color: #999;
+          margin-top: 8px;
+          font-style: italic;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 60px 20px;
+        }
+
+        .empty-state-icon {
+          font-size: 64px;
+          margin-bottom: 16px;
+          opacity: 0.5;
+        }
+
+        .empty-state-text {
+          color: #666;
+          font-size: 16px;
+        }
+
+        /* Modal spécifique pour recettes */
+        .modal {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 1000;
+          padding: 20px;
+          overflow-y: auto;
+        }
+
+        .modal.show {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 400px;
+          max-height: 90vh;
+          overflow-y: auto;
+          animation: modalSlideIn 0.3s ease-out;
+        }
+
+        .modal-large {
+          max-width: 500px;
+        }
+
+        @keyframes modalSlideIn {
+          from {
+            transform: translateY(100px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+          font-size: 20px;
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 24px;
+          color: #999;
+          cursor: pointer;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+        }
+
+        .modal-body {
+          padding: 20px;
+        }
+
+        .validation-section {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          background: #f0f8f5;
+          border-radius: 12px;
+          margin-bottom: 16px;
+        }
+
+        .validation-checkbox {
+          width: 20px;
+          height: 20px;
+          cursor: pointer;
+        }
+
+        .validation-label {
+          font-weight: 500;
+          color: #333;
+          cursor: pointer;
+        }
+
+        .ingredients-list {
+          background: #f8f8f8;
+          border-radius: 12px;
+          padding: 16px;
+          margin: 16px 0;
+        }
+
+        .ingredients-title {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 12px;
+          font-size: 16px;
+        }
+
+        .ingredient-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 0;
+          border-bottom: 1px solid #e0e0e0;
+        }
+
+        .ingredient-item:last-child {
+          border-bottom: none;
+        }
+
+        .ingredient-name {
+          flex: 1;
+          color: #555;
+        }
+
+        .ingredient-quantity {
+          color: #888;
+          margin-right: 12px;
+        }
+
+        .ingredient-kcal {
+          color: var(--color-coral);
+          font-weight: 500;
+          min-width: 60px;
+          text-align: right;
+        }
+
+        .instructions-section {
+          background: #f0f8f5;
+          border-radius: 12px;
+          padding: 16px;
+          margin: 16px 0;
+        }
+
+        .instructions-title {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 8px;
+        }
+
+        .instructions-text {
+          color: #555;
+          line-height: 1.6;
+          white-space: pre-wrap;
+        }
+
+        .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+          margin: 16px 0;
+        }
+
+        .info-box {
+          background: #f8f8f8;
+          padding: 12px;
+          border-radius: 12px;
+          text-align: center;
+        }
+
+        .info-label {
+          font-size: 12px;
+          color: #666;
+          margin-bottom: 4px;
+        }
+
+        .info-value {
+          font-size: 18px;
+          font-weight: 600;
+          color: #333;
+        }
+
+        .info-value.kcal {
+          color: var(--color-coral);
+        }
+
+        .info-value.price {
+          color: var(--color-mint);
+        }
+
+        /* Formulaire de création */
+        .form-section {
+          margin-bottom: 20px;
+        }
+
+        .form-section-title {
+          font-weight: 600;
+          color: #333;
+          margin-bottom: 12px;
+          font-size: 16px;
+        }
+
+        .ingredient-input-row {
+          display: grid;
+          grid-template-columns: 1fr 80px 60px 40px;
+          gap: 8px;
+          margin-bottom: 8px;
+          align-items: center;
+        }
+
+        .btn-remove-ingredient {
+          background: #ff6b6b;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 6px;
+          cursor: pointer;
+          font-size: 16px;
+        }
+
+        .btn-add-ingredient {
+          background: var(--color-mint);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          padding: 8px 16px;
+          cursor: pointer;
+          font-size: 14px;
+          margin-top: 8px;
+        }
+
+        .form-textarea {
+          width: 100%;
+          padding: 10px 14px;
+          border: 2px solid #eee;
+          border-radius: 12px;
+          font-size: 15px;
+          transition: all 0.3s ease;
+          resize: vertical;
+          min-height: 100px;
+          font-family: inherit;
+        }
+
+        .form-textarea:focus {
+          outline: none;
+          border-color: var(--color-mint);
+        }
+
+        .form-input {
+          width: 100%;
+          padding: 10px 14px;
+          border: 2px solid #eee;
+          border-radius: 12px;
+          font-size: 15px;
+          transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+          outline: none;
+          border-color: var(--color-mint);
+        }
+
+        .form-group {
+          margin-bottom: 16px;
+        }
+
+        .form-label {
+          display: block;
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 6px;
+        }
+
+        .modal-actions {
+          display: flex;
+          gap: 12px;
+          margin-top: 24px;
+        }
+
+        .modal-actions .btn {
+          flex: 1;
+        }
+      </style>
+    `;
+  }
+
+  renderRecettesList() {
+    if (this.filteredRecettes.length === 0) {
+      return `
+        <div class="empty-state">
+          <div class="empty-state-icon">🍽️</div>
+          <div class="empty-state-text">
+            ${this.searchQuery ? 'Aucune recette trouvée' : 'Aucune recette disponible'}
+          </div>
+        </div>
+      `;
+    }
+
+    return this.filteredRecettes.map(recette => {
+      // Prépare un aperçu des ingrédients
+      const ingredientsPreview = recette.ingredients
+        .slice(0, 3)
+        .map(ing => ing.nom)
+        .join(', ');
+      const moreIngredients = recette.ingredients.length > 3 ? '...' : '';
       
-      dayEntries.forEach(entry => {
-        totals.total += entry.kcal;
-        
-        switch(entry.repas.toLowerCase()) {
-          case 'petit-déjeuner':
-          case 'petit déjeuner':
-            totals.petitDejeuner += entry.kcal;
-            break;
-          case 'déjeuner':
-            totals.dejeuner += entry.kcal;
-            break;
-          case 'dîner':
-          case 'diner':
-            totals.diner += entry.kcal;
-            break;
-          case 'collation':
-          case 'encas':
-            totals.collation += entry.kcal;
-            break;
+      return `
+        <div class="recette-card" data-id="${recette.id}">
+          ${recette.validation ? '<span class="recette-validation">✔</span>' : ''}
+          <div class="recette-header">
+            <div class="recette-name">${recette.intitule}</div>
+            <div class="recette-kcal">${Math.round(recette.kcalTotal)} kcal</div>
+          </div>
+          <div class="recette-details">
+            <span class="recette-portions">
+              <span>👥</span>
+              <span>${recette.portion} portion${recette.portion > 1 ? 's' : ''}</span>
+            </span>
+            <span class="recette-prix">${recette.prixTotal ? recette.prixTotal.toFixed(2) + '€' : '-'}</span>
+            <span> • ${recette.ingredients.length} ingrédients</span>
+          </div>
+          <div class="recette-ingredients-preview">
+            ${ingredientsPreview}${moreIngredients}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  attachEvents() {
+    // Recherche
+    const searchInput = document.getElementById('search-recettes');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.searchQuery = e.target.value;
+        this.filterRecettes();
+        this.updateRecettesList();
+      });
+    }
+
+    // Filtre de calories
+    const kcalFilter = document.getElementById('kcal-filter');
+    if (kcalFilter) {
+      kcalFilter.addEventListener('change', (e) => {
+        console.log('Changement filtre kcal:', e.target.value);
+        this.selectedKcalRange = e.target.value;
+        this.filterRecettes();
+        this.updateRecettesList();
+      });
+    }
+
+    // Filtre de prix
+    const prixFilter = document.getElementById('prix-filter');
+    if (prixFilter) {
+      prixFilter.addEventListener('change', (e) => {
+        console.log('Changement filtre prix:', e.target.value);
+        this.selectedPrixRange = e.target.value;
+        this.filterRecettes();
+        this.updateRecettesList();
+      });
+    }
+
+    // Bouton ajouter
+    const addBtn = document.getElementById('add-recette');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        this.showRecetteModal(null);
+      });
+    }
+
+    // Click sur une recette
+    this.attachRecetteEvents();
+
+    // Modal
+    const modalClose = document.getElementById('modal-close');
+    if (modalClose) {
+      modalClose.addEventListener('click', () => this.hideModal());
+    }
+
+    const modal = document.getElementById('recette-modal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          this.hideModal();
         }
       });
-    } catch (error) {
-      console.error('Erreur lors du calcul des totaux:', error);
-    }
-    
-    return totals;
-  }
-
-  /**
-   * Génère la prochaine référence disponible
-   * Format: 0001, 0002, etc.
-   */
-  async getNextReference() {
-    console.log('🔢 Génération de la prochaine référence...');
-    
-    try {
-      const ingredients = await this.readIngredients();
-      
-      // Extrait tous les numéros des références existantes
-      const numbers = ingredients
-        .map(ing => {
-          // Extrait le nombre de la référence (ex: "FRU01" → 1, "0042" → 42)
-          const match = ing.reference?.match(/(\d+)$/);
-          return match ? parseInt(match[1]) : 0;
-        })
-        .filter(n => !isNaN(n));
-      
-      // Trouve le plus grand numéro
-      const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0;
-      
-      // Génère la prochaine référence (format 0000)
-      const nextNumber = maxNumber + 1;
-      const nextRef = nextNumber.toString().padStart(4, '0');
-      
-      console.log(`✅ Prochaine référence: ${nextRef}`);
-      return nextRef;
-      
-    } catch (error) {
-      console.error('Erreur lors de la génération de référence:', error);
-      // Fallback avec timestamp
-      return Date.now().toString().slice(-4);
     }
   }
 
-  /**
-   * Lit les options des menus déroulants
-   * @returns {Object} {categories: [], fournisseurs: [], unites: [], kcalRanges: [], prixRanges: []}
-   */
-  async readMenuOptions() {
-    console.log('📋 Lecture des menus déroulants...');
-    
-    try {
-      const rows = await this.readRange('menus déroulants', 'A2:E100');
-      
-      const options = {
-        categories: new Set(),
-        fournisseurs: new Set(),
-        unites: new Set(),
-        kcalRanges: new Set(),
-        prixRanges: new Set()
-      };
-      
-      rows.forEach(row => {
-        if (row[0]) options.categories.add(row[0]);
-        if (row[1]) options.fournisseurs.add(row[1]);
-        if (row[2]) options.unites.add(row[2]);
-        if (row[3]) options.kcalRanges.add(row[3]);
-        if (row[4]) options.prixRanges.add(row[4]);
+  attachRecetteEvents() {
+    document.querySelectorAll('.recette-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = parseInt(card.dataset.id);
+        const recette = this.recettes.find(r => r.id === id);
+        if (recette) {
+          this.showRecetteModal(recette);
+        }
       });
-      
-      // Convertit en array SANS trier pour garder l'ordre du sheet
-      return {
-        categories: Array.from(options.categories),
-        fournisseurs: Array.from(options.fournisseurs),
-        unites: Array.from(options.unites),
-        kcalRanges: Array.from(options.kcalRanges),
-        prixRanges: Array.from(options.prixRanges)
-      };
-      
-    } catch (error) {
-      console.error('Erreur lors de la lecture des menus:', error);
-      // Valeurs par défaut
-      return {
-        categories: ['Fruits', 'Légumes', 'Viandes', 'Produits laitiers'],
-        fournisseurs: ['Bio Market', 'Primeur Local', 'Jardin Direct'],
-        unites: ['g', 'kg', 'L', 'mL', 'pièce', 'pot', 'sachet'],
-        kcalRanges: ['< 100 kcal', '100-300 kcal', '300-500 kcal', '> 500 kcal'],
-        prixRanges: ['< 5€', '5-10€', '10-20€', '> 20€']
-      };
+    });
+  }
+
+  updateRecettesList() {
+    const listContainer = document.querySelector('.recettes-list');
+    if (listContainer) {
+      listContainer.innerHTML = this.renderRecettesList();
+      // Réattache les événements sur les nouvelles cartes
+      this.attachRecetteEvents();
     }
+
+    // Met à jour le compteur
+    const countElement = document.querySelector('.results-count');
+    if (countElement) {
+      countElement.textContent = `${this.filteredRecettes.length} recette${this.filteredRecettes.length > 1 ? 's' : ''} trouvée${this.filteredRecettes.length > 1 ? 's' : ''}`;
+    }
+  }
+
+  showRecetteModal(recette) {
+    this.currentRecette = recette;
+    const modal = document.getElementById('recette-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+
+    modalTitle.textContent = recette ? 'Détails de la recette' : 'Nouvelle recette';
+
+    if (recette) {
+      // Mode visualisation
+      const kcalPerPortion = recette.portion > 0 ? Math.round(recette.kcalTotal / recette.portion) : 0;
+      const prixPerPortion = recette.portion > 0 ? (recette.prixTotal / recette.portion).toFixed(2) : '0.00';
+      
+      modalBody.innerHTML = `
+        <div id="view-mode">
+          <h3 style="margin: 0 0 16px 0; font-size: 22px;">${recette.intitule}</h3>
+          
+          <!-- Section validation -->
+          <div class="validation-section">
+            <input type="checkbox" id="validation-checkbox" class="validation-checkbox" 
+                   ${recette.validation ? 'checked' : ''}>
+            <label for="validation-checkbox" class="validation-label">
+              Recette validée
+            </label>
+          </div>
+
+          <!-- Informations générales -->
+          <div class="info-grid">
+            <div class="info-box">
+              <div class="info-label">Portions</div>
+              <div class="info-value">${recette.portion}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">Poids total</div>
+              <div class="info-value">${recette.poids || 0}g</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">Calories totales</div>
+              <div class="info-value kcal">${Math.round(recette.kcalTotal)}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">Prix total</div>
+              <div class="info-value price">${recette.prixTotal ? recette.prixTotal.toFixed(2) + '€' : '-'}</div>
+            </div>
+          </div>
+
+          <!-- Par portion -->
+          <div class="info-grid">
+            <div class="info-box">
+              <div class="info-label">Calories / portion</div>
+              <div class="info-value kcal">${kcalPerPortion}</div>
+            </div>
+            <div class="info-box">
+              <div class="info-label">Prix / portion</div>
+              <div class="info-value price">${prixPerPortion}€</div>
+            </div>
+          </div>
+
+          <!-- Liste des ingrédients -->
+          <div class="ingredients-list">
+            <div class="ingredients-title">Ingrédients (${recette.ingredients.length})</div>
+            ${recette.ingredients.map(ing => `
+              <div class="ingredient-item">
+                <span class="ingredient-name">${ing.nom}</span>
+                <span class="ingredient-quantity">${ing.quantite} ${ing.unite}</span>
+                <span class="ingredient-kcal">${ing.kcal ? Math.round(ing.kcal) : '-'} kcal</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- Instructions -->
+          ${recette.instructions ? `
+            <div class="instructions-section">
+              <div class="instructions-title">Instructions</div>
+              <div class="instructions-text">${recette.instructions}</div>
+            </div>
+          ` : ''}
+
+          <div class="modal-actions">
+            <button class="btn btn-primary" id="btn-edit-recette">
+              Modifier
+            </button>
+            <button class="btn btn-secondary" id="btn-close-view">
+              Fermer
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Attache les événements aux boutons
+      setTimeout(() => {
+        const btnEdit = document.getElementById('btn-edit-recette');
+        if (btnEdit) {
+          btnEdit.addEventListener('click', () => this.editRecette());
+        }
+        
+        const btnClose = document.getElementById('btn-close-view');
+        if (btnClose) {
+          btnClose.addEventListener('click', () => this.hideModal());
+        }
+
+        // Gestion de la checkbox de validation
+        const validationCheckbox = document.getElementById('validation-checkbox');
+        if (validationCheckbox) {
+          validationCheckbox.addEventListener('change', async (e) => {
+            await this.updateRecetteValidation(recette, e.target.checked);
+          });
+        }
+      }, 0);
+    } else {
+      // Mode création
+      this.showEditForm(null);
+    }
+
+    modal.classList.add('show');
+  }
+
+  async updateRecetteValidation(recette, isValidated) {
+    try {
+      // Met à jour la validation
+      recette.validation = isValidated;
+      
+      // Sauvegarde dans Sheets
+      await this.app.modules.sheets.updateRecipe(recette.id, recette);
+      
+      // Recharge les données pour rafraîchir l'affichage
+      await this.loadRecettes();
+      this.filterRecettes();
+      this.updateRecettesList();
+      
+      this.app.showToast(
+        isValidated ? 'Recette validée !' : 'Validation retirée', 
+        'success'
+      );
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la validation:', error);
+      this.app.showToast('Erreur lors de la mise à jour', 'error');
+    }
+  }
+
+  editRecette() {
+    if (this.currentRecette) {
+      this.showEditForm(this.currentRecette);
+    }
+  }
+
+  showEditForm(recette) {
+    const modalBody = document.getElementById('modal-body');
+    const modalTitle = document.getElementById('modal-title');
+    
+    modalTitle.textContent = recette ? 'Modifier la recette' : 'Nouvelle recette';
+    
+    // Pour la création, initialise avec des valeurs par défaut
+    const formData = recette || {
+      intitule: '',
+      portion: 1,
+      instructions: '',
+      validation: false,
+      ingredients: []
+    };
+    
+    modalBody.innerHTML = `
+      <form id="recette-form">
+        <!-- Informations de base -->
+        <div class="form-section">
+          <div class="form-group">
+            <label class="form-label">Nom de la recette *</label>
+            <input type="text" class="form-input" id="input-intitule" 
+                   value="${formData.intitule}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Nombre de portions *</label>
+            <input type="number" class="form-input" id="input-portions" 
+                   value="${formData.portion}" required min="1" step="1">
+          </div>
+          
+          <div class="validation-section">
+            <input type="checkbox" id="input-validation" class="validation-checkbox" 
+                   ${formData.validation ? 'checked' : ''}>
+            <label for="input-validation" class="validation-label">
+              Recette validée
+            </label>
+          </div>
+        </div>
+
+        <!-- Ingrédients -->
+        <div class="form-section">
+          <div class="form-section-title">Ingrédients</div>
+          <div id="ingredients-container">
+            ${formData.ingredients.length > 0 ? 
+              formData.ingredients.map((ing, index) => this.renderIngredientRow(ing, index)).join('') :
+              this.renderIngredientRow(null, 0)
+            }
+          </div>
+          <button type="button" class="btn-add-ingredient" id="btn-add-ingredient-row">
+            + Ajouter un ingrédient
+          </button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="form-section">
+          <div class="form-group">
+            <label class="form-label">Instructions</label>
+            <textarea class="form-textarea" id="input-instructions" 
+                      placeholder="Décrivez les étapes de préparation...">${formData.instructions || ''}</textarea>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">
+            ${recette ? 'Enregistrer' : 'Créer'}
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-cancel-form">
+            Annuler
+          </button>
+        </div>
+      </form>
+    `;
+
+    // Attache les événements
+    this.attachFormEvents();
+  }
+
+  renderIngredientRow(ingredient, index) {
+    // Trie les ingrédients par ordre alphabétique
+    const ingredientOptions = this.ingredients.map(ing => 
+      `<option value="${ing.reference}" data-unite="${ing.unite || 'g'}" ${ingredient && ingredient.ref === ing.reference ? 'selected' : ''}>
+        ${ing.intitule}
+      </option>`
+    ).join('');
+
+    // Détermine l'unité à afficher
+    let unite = '';
+    if (ingredient && ingredient.ref) {
+      // Si on a un ingrédient sélectionné, trouve son unité depuis les données
+      const ingredientData = this.ingredients.find(ing => ing.reference === ingredient.ref);
+      unite = ingredientData ? ingredientData.unite : ingredient.unite || '';
+    }
+
+    return `
+      <div class="ingredient-input-row" data-index="${index}">
+        <select class="form-input ingredient-select" required data-index="${index}">
+          <option value="">Sélectionner...</option>
+          ${ingredientOptions}
+        </select>
+        <input type="number" class="form-input ingredient-quantity" 
+               value="${ingredient ? ingredient.quantite : ''}" 
+               placeholder="Qté" required min="0" step="0.1">
+        <input type="text" class="form-input ingredient-unit" 
+               value="${unite}" 
+               placeholder="Unité" readonly disabled
+               style="background-color: #f5f5f5; cursor: not-allowed;">
+        <button type="button" class="btn-remove-ingredient" data-index="${index}">✕</button>
+      </div>
+    `;
+  }
+
+  attachFormEvents() {
+    // Soumission du formulaire
+    const form = document.getElementById('recette-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.saveRecette();
+    });
+
+    // Bouton annuler
+    const btnCancel = document.getElementById('btn-cancel-form');
+    if (btnCancel) {
+      btnCancel.addEventListener('click', () => this.hideModal());
+    }
+
+    // Ajouter un ingrédient
+    const btnAddIngredient = document.getElementById('btn-add-ingredient-row');
+    if (btnAddIngredient) {
+      btnAddIngredient.addEventListener('click', () => {
+        const container = document.getElementById('ingredients-container');
+        const index = container.children.length;
+        const newRow = document.createElement('div');
+        newRow.innerHTML = this.renderIngredientRow(null, index);
+        container.appendChild(newRow.firstElementChild);
+        this.attachIngredientRowEvents();
+      });
+    }
+
+    // Events sur les lignes d'ingrédients
+    this.attachIngredientRowEvents();
+  }
+
+  attachIngredientRowEvents() {
+    // Boutons supprimer
+    document.querySelectorAll('.btn-remove-ingredient').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const row = e.target.closest('.ingredient-input-row');
+        if (document.querySelectorAll('.ingredient-input-row').length > 1) {
+          row.remove();
+        } else {
+          this.app.showToast('Une recette doit avoir au moins un ingrédient', 'warning');
+        }
+      });
+    });
+
+    // Auto-remplissage de l'unité lors de la sélection d'un ingrédient
+    document.querySelectorAll('.ingredient-select').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const unite = selectedOption.dataset.unite || 'g';
+        const row = e.target.closest('.ingredient-input-row');
+        const uniteInput = row.querySelector('.ingredient-unit');
+        if (uniteInput) {
+          uniteInput.value = unite;
+        }
+      });
+    });
+  }
+
+  async saveRecette() {
+    console.log('🔄 Début de la sauvegarde de recette...');
+    
+    const formData = {
+      intitule: document.getElementById('input-intitule').value,
+      portion: parseInt(document.getElementById('input-portions').value) || 1,
+      instructions: document.getElementById('input-instructions').value,
+      validation: document.getElementById('input-validation').checked,
+      ingredients: []
+    };
+
+    console.log('📝 Données du formulaire:', formData);
+
+    // Collecte les ingrédients
+    const ingredientRows = document.querySelectorAll('.ingredient-input-row');
+    ingredientRows.forEach(row => {
+      const select = row.querySelector('.ingredient-select');
+      const quantity = row.querySelector('.ingredient-quantity');
+      
+      if (select.value && quantity.value) {
+        formData.ingredients.push({
+          ref: select.value,
+          quantite: parseFloat(quantity.value)
+          // L'unité n'est plus envoyée car elle est déterminée par les formules du sheet
+        });
+      }
+    });
+
+    console.log(`📦 ${formData.ingredients.length} ingrédients collectés`);
+
+    // Validation
+    if (!formData.intitule) {
+      this.app.showToast('Le nom de la recette est obligatoire', 'error');
+      return;
+    }
+
+    if (formData.ingredients.length === 0) {
+      this.app.showToast('Ajoutez au moins un ingrédient', 'error');
+      return;
+    }
+
+    try {
+      if (this.currentRecette) {
+        // Mode édition
+        console.log('✏️ Mode édition - Recette ID:', this.currentRecette.id);
+        formData.numero = this.currentRecette.numero;
+        console.log('📤 Envoi des données à updateRecipe:', formData);
+        
+        await this.app.modules.sheets.updateRecipe(this.currentRecette.id, formData);
+        this.app.showToast('Recette mise à jour avec succès', 'success');
+      } else {
+        // Mode création
+        console.log('➕ Mode création');
+        await this.app.modules.sheets.addRecipe(formData);
+        this.app.showToast('Recette créée avec succès', 'success');
+      }
+      
+      // Recharge les données
+      console.log('🔄 Rechargement des données...');
+      await this.loadRecettes();
+      this.filterRecettes();
+      this.updateRecettesList();
+      
+      this.hideModal();
+    } catch (error) {
+      console.error('❌ Erreur détaillée lors de la sauvegarde:', error);
+      console.error('Stack trace:', error.stack);
+      this.app.showToast('Erreur lors de la sauvegarde', 'error');
+    }
+  }
+
+  hideModal() {
+    const modal = document.getElementById('recette-modal');
+    modal.classList.remove('show');
+    this.currentRecette = null;
   }
 }
 
 // Export global
-window.SheetsAPI = new SheetsAPI();
-
-// Si l'app est déjà chargée, on peut initialiser
-if (window.app) {
-  console.log('App détectée, SheetsAPI prêt à être initialisé');
-}
+window.RecettesPage = RecettesPage;
