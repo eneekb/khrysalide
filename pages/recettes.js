@@ -1,7 +1,7 @@
 /**
  * recettes.js - Page de consultation et gestion des recettes
  * Affiche la liste des recettes avec leurs détails et gestion de la validation
- * Version: 1.4.2
+ * Version: 1.4.3
  */
 
 class RecettesPage {
@@ -82,6 +82,10 @@ class RecettesPage {
     try {
       this.recettes = await this.app.modules.sheets.readRecipes();
       console.log(`✅ ${this.recettes.length} recettes chargées`);
+      
+      // Trie par ordre alphabétique
+      this.recettes.sort((a, b) => a.intitule.localeCompare(b.intitule));
+      
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
       // Pas de données de démo, liste vide
@@ -1089,14 +1093,22 @@ class RecettesPage {
   renderIngredientRow(ingredient, index) {
     // Trie les ingrédients par ordre alphabétique
     const ingredientOptions = this.ingredients.map(ing => 
-      `<option value="${ing.reference}" ${ingredient && ingredient.ref === ing.reference ? 'selected' : ''}>
+      `<option value="${ing.reference}" data-unite="${ing.unite || 'g'}" ${ingredient && ingredient.ref === ing.reference ? 'selected' : ''}>
         ${ing.intitule}
       </option>`
     ).join('');
 
+    // Détermine l'unité à afficher
+    let unite = '';
+    if (ingredient && ingredient.ref) {
+      // Si on a un ingrédient sélectionné, trouve son unité depuis les données
+      const ingredientData = this.ingredients.find(ing => ing.reference === ingredient.ref);
+      unite = ingredientData ? ingredientData.unite : ingredient.unite || '';
+    }
+
     return `
       <div class="ingredient-input-row" data-index="${index}">
-        <select class="form-input ingredient-select" required>
+        <select class="form-input ingredient-select" required data-index="${index}">
           <option value="">Sélectionner...</option>
           ${ingredientOptions}
         </select>
@@ -1104,8 +1116,9 @@ class RecettesPage {
                value="${ingredient ? ingredient.quantite : ''}" 
                placeholder="Qté" required min="0" step="0.1">
         <input type="text" class="form-input ingredient-unit" 
-               value="${ingredient ? ingredient.unite : ''}" 
-               placeholder="Unité" required>
+               value="${unite}" 
+               placeholder="Unité" readonly disabled
+               style="background-color: #f5f5f5; cursor: not-allowed;">
         <button type="button" class="btn-remove-ingredient" data-index="${index}">✕</button>
       </div>
     `;
@@ -1154,6 +1167,19 @@ class RecettesPage {
         }
       });
     });
+
+    // Auto-remplissage de l'unité lors de la sélection d'un ingrédient
+    document.querySelectorAll('.ingredient-select').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const unite = selectedOption.dataset.unite || 'g';
+        const row = e.target.closest('.ingredient-input-row');
+        const uniteInput = row.querySelector('.ingredient-unit');
+        if (uniteInput) {
+          uniteInput.value = unite;
+        }
+      });
+    });
   }
 
   async saveRecette() {
@@ -1174,13 +1200,12 @@ class RecettesPage {
     ingredientRows.forEach(row => {
       const select = row.querySelector('.ingredient-select');
       const quantity = row.querySelector('.ingredient-quantity');
-      const unit = row.querySelector('.ingredient-unit');
       
       if (select.value && quantity.value) {
         formData.ingredients.push({
           ref: select.value,
-          quantite: parseFloat(quantity.value),
-          unite: unit.value
+          quantite: parseFloat(quantity.value)
+          // L'unité n'est plus envoyée car elle est déterminée par les formules du sheet
         });
       }
     });
