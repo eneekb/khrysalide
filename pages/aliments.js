@@ -1,7 +1,7 @@
 /**
  * aliments.js - Page de consultation et recherche des aliments
  * Affiche la liste des ingrédients avec recherche et filtres
- * Version: 1.4.2
+ * Version: 1.4.3
  */
 
 class AlimentsPage {
@@ -60,6 +60,9 @@ class AlimentsPage {
     try {
       this.ingredients = await this.app.modules.sheets.readIngredients();
       console.log(`✅ ${this.ingredients.length} ingrédients chargés`);
+      
+      // Trie par ordre alphabétique
+      this.ingredients.sort((a, b) => a.intitule.localeCompare(b.intitule));
       
       // Construit les listes pour les filtres
       this.categories = new Set(['all']);
