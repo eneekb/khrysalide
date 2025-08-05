@@ -14,7 +14,8 @@ class SheetsAPI {
       ingredients: 'ingredients et preparations de base',
       recettes: 'recettes',
       journal: 'Journal',
-      profil: 'Profil'
+      profil: 'Profil',
+      pesees: 'Pesées'
     };
   }
 
@@ -48,6 +49,17 @@ class SheetsAPI {
     const parts = frenchDate.split('/');
     if (parts.length !== 3) return frenchDate;
     return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  }
+
+  /**
+   * Convertit une date du format ISO YYYY-MM-DD vers français DD/MM/YYYY
+   * Exemple: "2025-07-25" → "25/07/2025"
+   */
+  isoToFrenchDate(isoDate) {
+    if (!isoDate) return '';
+    const parts = isoDate.split('-');
+    if (parts.length !== 3) return isoDate;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
 
   /**
@@ -594,6 +606,53 @@ class SheetsAPI {
     const values = [['', '', '', '', '', '']];
     
     return await this.writeRange(this.sheets.journal, range, values);
+  }
+
+  /**
+   * Lit toutes les pesées
+   * @returns {Array} Liste des pesées
+   */
+  async readWeights() {
+    console.log('📖 Lecture des pesées...');
+    
+    const rows = await this.readRange(this.sheets.pesees, 'A2:C1000');
+    
+    return rows.map((row, index) => ({
+      id: index + 2,
+      date: this.frenchToISODate(row[0] || ''),
+      dateFrench: row[0] || '',
+      poids: this.parseFloatFrench(row[1]),
+      commentaire: row[2] || ''
+    })).filter(entry => entry.date && entry.poids > 0);
+  }
+
+  /**
+   * Ajoute une pesée
+   * @param {Object} weight - {date: YYYY-MM-DD, poids: XX.X, commentaire: '...'}
+   */
+  async addWeight(weight) {
+    console.log('➕ Ajout d\'une pesée:', weight);
+    
+    // Convertit la date au format français pour l'écriture
+    const dateFrench = weight.date ? this.isoToFrenchDate(weight.date) : this.isoToFrenchDate(new Date().toISOString().split('T')[0]);
+    
+    // Formate le poids avec une virgule pour le format français
+    const poidsFrench = weight.poids.toString().replace('.', ',');
+    
+    const values = [[
+      dateFrench,
+      poidsFrench,
+      weight.commentaire || ''
+    ]];
+    
+    const result = await this.appendRows(this.sheets.pesees, values);
+    
+    // Notifie l'utilisateur
+    if (window.app?.showToast) {
+      window.app.showToast('Pesée enregistrée !', 'success');
+    }
+    
+    return result;
   }
 
   /**
