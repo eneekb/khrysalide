@@ -1,7 +1,7 @@
 /**
  * aliments.js - Page de consultation et recherche des aliments
  * Affiche la liste des ingrédients avec recherche et filtres
- * Version: 1.4.3
+ * Version: 1.4.5
  */
 
 class AlimentsPage {
