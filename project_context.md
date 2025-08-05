@@ -4,7 +4,7 @@
 
 **Nom de l'application** : Khrysalide (jeu de mots avec Kcal)
 
-**Version actuelle** : 1.4.1
+**Version actuelle** : 1.4.4
 
 **Logo** : K stylisé avec formes organiques (vert menthe et pêche) - fichier logo.png
 
@@ -83,22 +83,25 @@ AIzaSyAOjvMmmLPoFtWhyWuxDh2Ca3QzO_y_MAo
   - M: `Prix/Kcal` : ratio prix/calories
 
 ### Feuille 2 : "recettes"
+**IMPORTANT : Modification avec colonne Validation**
 - Structure horizontale avec jusqu'à 15 ingrédients
 - **Colonnes de base** :
   - A: `Numéro` : référence unique (R001, R002, etc.)
   - B: `Intitulé` : nom de la recette
-  - C: `Portion` : nombre de portions
-  - D: `Instructions` : étapes de préparation
-  - E: `Poids` : poids total calculé
-  - F: `Kcal total` : calories totales calculées
-  - G: `Prix total` : prix total calculé
-- **Pour chaque ingrédient** (colonnes H et suivantes, par groupes de 6) :
-  - Référence (lien vers ingrédient)
-  - Nom
-  - Quantité
-  - Unité
-  - Kcal (calculé)
-  - Prix (calculé)
+  - C: `Validation` : X si validée (NOUVELLE COLONNE)
+  - D: `Portion` : nombre de portions
+  - E: `Instructions` : étapes de préparation
+  - F: `Poids` : poids total calculé (FORMULE - NE PAS MODIFIER)
+  - G: `Kcal total` : calories totales calculées (FORMULE - NE PAS MODIFIER)
+  - H: `Prix total` : prix total calculé (FORMULE - NE PAS MODIFIER)
+- **Pour chaque ingrédient** (colonnes I et suivantes, par groupes de 6) :
+  - Ref : référence de l'ingrédient (lien)
+  - Nom : nom de l'ingrédient (FORMULE - NE PAS MODIFIER)
+  - Qté : quantité utilisée
+  - U : unité (FORMULE - NE PAS MODIFIER)
+  - Kcal : calories calculées (FORMULE - NE PAS MODIFIER)
+  - Prix : prix calculé (FORMULE - NE PAS MODIFIER)
+- **Dernière colonne** : CT (pour 15 ingrédients)
 
 ### Feuille 3 : "Journal"
 - A: `Date` : **Format DD/MM/YYYY** (ex: 25/07/2025)
@@ -119,8 +122,10 @@ AIzaSyAOjvMmmLPoFtWhyWuxDh2Ca3QzO_y_MAo
 - A: `Catégorie` : liste des catégories d'aliments
 - B: `Fournisseur` : liste des fournisseurs
 - C: `Unité` : liste des unités de mesure
-- D: `Kcal` : plages de calories pour filtres (ex: "< 100 kcal", "100-300 kcal")
-- E: `Prix` : plages de prix pour filtres (ex: "< 5€", "5-10€")
+- D: `Kcal` : plages de calories pour filtres
+  - Format : "moins de 500", "500 à 999", "1000 à 1499", "plus de 1500"
+- E: `Prix` : plages de prix pour filtres
+  - Format : "moins de 1€", "de 1 à 1,99 €", "de 2 à 4,99 €", "plus de 5 €"
 - **Important** : L'ordre dans le sheet est conservé (pas de tri alphabétique)
 
 ## 🏗️ Architecture et structure des fichiers
@@ -132,7 +137,7 @@ khrysalide/
 ├── logo.png           # Logo de l'application
 ├── PROJECT_CONTEXT.md  # Documentation technique (ce fichier)
 ├── js/
-│   ├── app.js         # Coordinateur principal (v1.4.1)
+│   ├── app.js         # Coordinateur principal (v1.4.4)
 │   ├── router.js      # Gestion de la navigation SPA
 │   ├── auth.js        # Authentification Google OAuth
 │   └── sheets-api.js  # Interface avec Google Sheets
@@ -216,6 +221,7 @@ window.SheetsAPI = {
   async readRange(sheet, range)            // Lit une plage
   async writeRange(sheet, range, values)   // Écrit dans une plage
   async appendRows(sheet, values)          // Ajoute des lignes
+  columnToLetter(column)                   // Convertit numéro → lettre (1→A, 27→AA)
   
   // Conversion de dates
   frenchToISODate(date)                    // "25/07/2025" → "2025-07-25"
@@ -229,9 +235,9 @@ window.SheetsAPI = {
   async getNextReference()                 // Génère la prochaine référence (0001, 0002...)
   
   // Méthodes spécifiques - Recettes
-  async readRecipes()                      // Retourne [{numero, intitule, portion, kcalTotal, ingredients: [...]}]
-  async addRecipe(recette)                 // Ajoute une recette avec calculs auto
-  async updateRecipe(rowId, recette)       // Met à jour une recette
+  async readRecipes()                      // Retourne [{numero, intitule, validation, portion, kcalTotal, ingredients: [...]}]
+  async addRecipe(recette)                 // Ajoute une recette (formules préservées)
+  async updateRecipe(rowId, recette)       // Met à jour par cellules individuelles
   async getNextRecipeNumber()              // Génère le prochain numéro (R001, R002...)
   
   // Méthodes spécifiques - Journal
@@ -358,18 +364,18 @@ window.[Nom]Page = [Nom]Page
 ### ✅ Complété
 - Structure du projet définie
 - Configuration Google Cloud
-- Authentification OAuth testée
-- Structure Google Sheets créée
+- Authentification OAuth testée et fonctionnelle
+- Structure Google Sheets créée avec colonne Validation
 - index.html avec splash screen (7 secondes, 40 phrases)
 - styles.css avec tous les composants UI
-- app.js (coordinateur principal)
+- app.js (coordinateur principal avec initGoogleAPI)
 - router.js (navigation SPA avec currentPageInstance)
 - auth.js (authentification Google OAuth 2.0)
-- sheets-api.js (API Google Sheets complète avec toutes les méthodes CRUD)
+- sheets-api.js (API complète avec protection des formules)
 - pages/dashboard.js (page d'accueil avec vraies données)
 - pages/login.js (page de connexion)
-- pages/aliments.js (CRUD complet, filtres, recherche, modal)
-- pages/recettes.js (CRUD complet, filtres kcal/prix, recherche)
+- pages/aliments.js (CRUD complet, filtres, recherche, modal, tri alphabétique)
+- pages/recettes.js (CRUD complet, filtres kcal/prix, recherche, validation, auto-unité)
 
 ### 🚧 En cours
 - [ ] pages/journal.js (enregistrement des repas)
@@ -408,6 +414,12 @@ window.[Nom]Page = [Nom]Page
 - **Numéros recettes** : Format R001, R002, etc.
 - **Gérés par l'API** : getNextReference(), getNextRecipeNumber()
 
+### Protection des formules Google Sheets
+- **updateRecipe** : Utilise batchUpdate pour écrire cellule par cellule
+- **N'écrit que** : Ref et Qté pour les ingrédients
+- **Ne touche jamais** : Nom, U, Kcal, Prix (contiennent des formules)
+- **addRecipe** : Laisse vides les colonnes de formules
+
 ### UI/UX
 - **Mobile-first** : Optimisé pour smartphone
 - **Couleurs principales** :
@@ -417,6 +429,8 @@ window.[Nom]Page = [Nom]Page
 - **Marges réduites** : Pour minimiser le scroll
 - **Messages encourageants** : Ton positif et motivant
 - **Filtres** : Conservent l'ordre du Google Sheets (pas de tri)
+- **Tri alphabétique** : Aliments et recettes triés par nom
+- **Auto-unité** : Sélection automatique selon l'ingrédient
 
 ## 📝 Notes de développement
 
@@ -424,8 +438,11 @@ window.[Nom]Page = [Nom]Page
 1. **Formats de date** : Toujours vérifier FR ↔ ISO
 2. **Limites API** : 300 requêtes/min, 60 écritures/min
 3. **Cache** : Prévoir système de cache pour les ingrédients
-4. **Erreurs** : Toujours avoir un fallback (mode démo)
+4. **Erreurs** : Plus de mode démo, messages d'erreur clairs
 5. **Ordre des menus** : Les filtres gardent l'ordre du sheet
+6. **Protection formules** : Ne jamais écrire dans colonnes avec formules
+7. **Filtres français** : "moins de", "plus de", virgules décimales
+8. **Prix** : Pas d'arrondi, affichage avec 2 décimales
 
 ### Conventions
 - **Commit messages** : "vX.X.X: type: description"
@@ -448,7 +465,7 @@ python -m http.server 8080
 # 1. Vérifier la checklist de versioning
 # 2. Puis :
 git add .
-git commit -m "v1.4.1: description des changements"
+git commit -m "v1.4.4: description des changements"
 git push origin main
 ```
 
@@ -480,11 +497,29 @@ git push origin main
 - **Développement assisté par** : Claude (Anthropic)
 
 ---
-*Dernière mise à jour : 25/07/2025 - v1.4.1*
+*Dernière mise à jour : 25/01/2025 - v1.4.4*
 
 ## 📋 Historique des versions
 
 _Note : Système de versioning ajouté à partir de v1.0.1_
+
+### v1.4.4 (25/01/2025)
+- Fix: Protection complète des formules Google Sheets
+- Refactor: updateRecipe utilise maintenant batchUpdate cellule par cellule
+- Feat: Nouvelle méthode columnToLetter() pour conversion colonnes
+- Fix: Les prix ne sont pas arrondis (conservation des décimales)
+
+### v1.4.3 (25/01/2025)
+- Feat: Auto-remplissage de l'unité lors de la sélection d'ingrédient
+- Fix: Ne modifie que les colonnes Ref et Qté (protection des formules)
+- Feat: Tri alphabétique des aliments et recettes au chargement
+
+### v1.4.2 (25/01/2025)
+- Fix: Initialisation de l'API Google dans app.js
+- Feat: Ajout de la colonne Validation dans les recettes
+- Fix: Filtres de recettes avec formats français
+- Feat: Suppression des données de démo
+- Fix: Correction de la plage de lecture des recettes (CT)
 
 ### v1.4.1 (25/07/2025)
 - Fix: Modal recettes ne s'ouvre plus automatiquement
@@ -593,10 +628,6 @@ _Note : Système de versioning ajouté à partir de v1.0.1_
 - Ajout du système de versioning automatique
 - Mise à jour PROJECT_CONTEXT avec règles de versioning
 
-### v1.0.0 (24/07/2025)
-- Version initiale
-- Écran de démarrage avec animations
-- Structure de base
 ### v1.0.0 (24/07/2025)
 - Version initiale
 - Écran de démarrage avec animations
