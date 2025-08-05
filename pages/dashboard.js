@@ -1,7 +1,7 @@
 /**
  * dashboard.js - Page d'accueil / tableau de bord de Khrysalide
  * Affiche le résumé du jour, les actions rapides et les stats
- * Version: 1.4.2
+ * Version: 1.4.5
  */
 
 class DashboardPage {
