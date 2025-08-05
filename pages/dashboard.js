@@ -14,6 +14,7 @@ class DashboardPage {
       weekDays: 0,
       recentMeals: []
     };
+    this.isModalOpen = false;
   }
 
   /**
@@ -160,8 +161,8 @@ class DashboardPage {
             <button class="btn btn-primary flex-1" onclick="dashboardPage.quickAdd()">
               ➕ Ajouter un repas
             </button>
-            <button class="btn btn-secondary flex-1" onclick="app.router.navigateTo('journal')">
-              📅 Voir le journal
+            <button class="btn btn-primary flex-1" onclick="dashboardPage.openWeightModal()">
+              ➕ Enregistrer une pesée
             </button>
           </div>
         </div>
@@ -207,7 +208,150 @@ class DashboardPage {
           </button>
         </div>
       </div>
+      
+      <!-- Modal de pesée -->
+      ${this.renderWeightModal()}
     `;
+  }
+
+  /**
+   * Rendu de la modal de pesée
+   */
+  renderWeightModal() {
+    return `
+      <div id="weightModal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Enregistrer une pesée</h2>
+            <button class="btn-icon" onclick="dashboardPage.closeWeightModal()">✕</button>
+          </div>
+          
+          <div class="modal-body">
+            <form id="weightForm" onsubmit="dashboardPage.saveWeight(event)">
+              <div class="input-group">
+                <label for="weightDate">Date</label>
+                <input 
+                  type="date" 
+                  id="weightDate" 
+                  name="date" 
+                  class="input" 
+                  value="${new Date().toISOString().split('T')[0]}"
+                  required
+                >
+                <small class="input-hint">Format : jj/mm/aaaa</small>
+              </div>
+              
+              <div class="input-group">
+                <label for="weightValue">Poids (kg)</label>
+                <input 
+                  type="number" 
+                  id="weightValue" 
+                  name="poids" 
+                  class="input" 
+                  placeholder="Ex: 75,5"
+                  step="0.1"
+                  min="30"
+                  max="300"
+                  required
+                >
+              </div>
+              
+              <div class="input-group">
+                <label for="weightComment">Commentaire (optionnel)</label>
+                <textarea 
+                  id="weightComment" 
+                  name="commentaire" 
+                  class="input" 
+                  rows="3"
+                  placeholder="Ex: Après les fêtes, début de rééquilibrage..."
+                ></textarea>
+              </div>
+              
+              <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="dashboardPage.closeWeightModal()">
+                  Annuler
+                </button>
+                <button type="submit" class="btn btn-primary">
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Ouvre la modal de pesée
+   */
+  openWeightModal() {
+    this.isModalOpen = true;
+    const modal = document.getElementById('weightModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      // Focus sur le premier champ
+      setTimeout(() => {
+        document.getElementById('weightValue')?.focus();
+      }, 100);
+    }
+  }
+
+  /**
+   * Ferme la modal de pesée
+   */
+  closeWeightModal() {
+    this.isModalOpen = false;
+    const modal = document.getElementById('weightModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+    // Reset le formulaire
+    const form = document.getElementById('weightForm');
+    if (form) {
+      form.reset();
+      // Remet la date du jour
+      document.getElementById('weightDate').value = new Date().toISOString().split('T')[0];
+    }
+  }
+
+  /**
+   * Sauvegarde une pesée
+   */
+  async saveWeight(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    // Récupère les données
+    const weight = {
+      date: formData.get('date'),
+      poids: parseFloat(formData.get('poids').replace(',', '.')),
+      commentaire: formData.get('commentaire') || ''
+    };
+    
+    console.log('💾 Sauvegarde de la pesée:', weight);
+    
+    try {
+      // Vérifie l'authentification
+      if (!window.SheetsAPI || !window.Auth?.isAuthenticated()) {
+        throw new Error('Non authentifié');
+      }
+      
+      // Sauvegarde dans Google Sheets
+      await window.SheetsAPI.addWeight(weight);
+      
+      // Ferme la modal
+      this.closeWeightModal();
+      
+      // Message de succès
+      this.app.showToast('Pesée enregistrée avec succès !', 'success');
+      
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      this.app.showToast('Erreur lors de l\'enregistrement', 'error');
+    }
   }
 
   /**
@@ -257,8 +401,15 @@ class DashboardPage {
    * Attache les événements après le rendu
    */
   attachEvents() {
-    // Les événements sont gérés via onclick pour l'instant
-    // Plus tard on pourra migrer vers addEventListener
+    // Ferme la modal si on clique en dehors
+    const modal = document.getElementById('weightModal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          this.closeWeightModal();
+        }
+      });
+    }
   }
 
   /**
@@ -516,6 +667,82 @@ const dashboardStyles = `
   
   .api-test:hover {
     opacity: 1;
+  }
+  
+  /* Modal de pesée */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--spacing-lg);
+  }
+  
+  .modal-content {
+    background: white;
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    color: var(--color-text-dark);
+  }
+  
+  .modal-body {
+    padding: var(--spacing-lg);
+  }
+  
+  .modal-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+    margin-top: var(--spacing-xl);
+  }
+  
+  .input-group {
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .input-group label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    font-weight: 500;
+    color: var(--color-text-dark);
+  }
+  
+  .input-group .input {
+    width: 100%;
+  }
+  
+  .input-hint {
+    display: block;
+    margin-top: var(--spacing-xs);
+    font-size: 0.875rem;
+    color: var(--color-text);
+  }
+  
+  textarea.input {
+    resize: vertical;
+    min-height: 80px;
   }
 </style>
 `;
