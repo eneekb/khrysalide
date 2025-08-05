@@ -1,7 +1,7 @@
 /**
  * recettes.js - Page de consultation et gestion des recettes
  * Affiche la liste des recettes avec leurs détails et gestion de la validation
- * Version: 1.4.4
+ * Version: 1.4.5
  */
 
 class RecettesPage {
@@ -911,6 +911,13 @@ class RecettesPage {
               <div class="info-value price">${recette.prixTotal ? recette.prixTotal.toFixed(2) + '€' : '-'}</div>
             </div>
           </div>
+          
+          <!-- Debug prix (temporaire) -->
+          ${recette.prixTotal ? `
+            <div style="font-size: 11px; color: #999; margin-top: 8px;">
+              Debug prix: valeur brute = ${recette.prixTotal} | toFixed(2) = ${recette.prixTotal.toFixed(2)}
+            </div>
+          ` : ''}
 
           <!-- Par portion -->
           <div class="info-grid">
