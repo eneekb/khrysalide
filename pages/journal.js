@@ -16,6 +16,12 @@ class JournalPage {
     this.searchFilter = 'all'; // all, aliments, recettes, manuel
     this.allIngredients = [];
     this.allRecipes = [];
+    
+    // Initialise la semaine courante
+    this.setCurrentWeek(new Date());
+    
+    // Crée des données vides pour la semaine
+    this.weekData = this.organizeWeekData([]);
   }
 
   /**
@@ -23,6 +29,9 @@ class JournalPage {
    */
   async init() {
     try {
+      // Crée l'instance globale pour les événements onclick
+      window.journalPage = this;
+      
       // Définit la semaine courante
       this.setCurrentWeek(new Date());
       
@@ -78,6 +87,7 @@ class JournalPage {
     const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajuste pour commencer le lundi
     this.currentWeekStart = new Date(d.setDate(diff));
     this.currentWeekStart.setHours(0, 0, 0, 0);
+    console.log('📅 Semaine définie:', this.currentWeekStart.toISOString());
   }
 
   /**
@@ -96,9 +106,11 @@ class JournalPage {
       
       // Charge les entrées de la semaine
       const entries = await window.SheetsAPI.readJournal(startISO, endISO);
+      console.log(`📊 ${entries.length} entrées trouvées pour la semaine`);
       
       // Organise les données par jour
       this.weekData = this.organizeWeekData(entries);
+      console.log('📅 Données de la semaine organisées:', this.weekData);
       
     } catch (error) {
       console.error('Erreur lors du chargement de la semaine:', error);
@@ -136,22 +148,23 @@ class JournalPage {
     // Calcule les totaux par repas
     weekData.forEach(day => {
       day.entries.forEach(entry => {
-        day.totals.total += entry.kcal;
+        day.totals.total += entry.kcal || 0;
         
-        switch(entry.repas.toLowerCase()) {
+        const repasLower = entry.repas?.toLowerCase() || '';
+        switch(repasLower) {
           case 'petit-déjeuner':
           case 'petit déjeuner':
-            day.totals.petitDejeuner += entry.kcal;
+            day.totals.petitDejeuner += entry.kcal || 0;
             break;
           case 'déjeuner':
-            day.totals.dejeuner += entry.kcal;
+            day.totals.dejeuner += entry.kcal || 0;
             break;
           case 'dîner':
           case 'diner':
-            day.totals.diner += entry.kcal;
+            day.totals.diner += entry.kcal || 0;
             break;
           case 'collation':
-            day.totals.collation += entry.kcal;
+            day.totals.collation += entry.kcal || 0;
             break;
         }
       });
@@ -164,6 +177,9 @@ class JournalPage {
    * Rendu de la page
    */
   render() {
+    // Crée l'instance globale pour les événements onclick
+    window.journalPage = this;
+    
     return `
       <div class="page journal-page">
         ${this.renderWeekHeader()}
@@ -202,6 +218,10 @@ class JournalPage {
    * Rendu de la vue semaine
    */
   renderWeekView() {
+    if (!this.weekData || this.weekData.length === 0) {
+      return '<div class="week-grid"><p class="no-data">Chargement...</p></div>';
+    }
+    
     return `
       <div class="week-grid">
         ${this.weekData.map(day => this.renderDayCard(day)).join('')}
@@ -228,16 +248,16 @@ class JournalPage {
             <div class="day-total">${Math.round(day.totals.total)}</div>
             <div class="day-unit">kcal</div>
             <div class="day-details">
-              <span>P:${Math.round(day.totals.petitDejeuner)}</span>
-              <span>D:${Math.round(day.totals.dejeuner)}</span>
-              <span>d:${Math.round(day.totals.diner)}</span>
-              <span>C:${Math.round(day.totals.collation)}</span>
+              <span>P:${Math.round(day.totals.petitDejeuner || 0)}</span>
+              <span>D:${Math.round(day.totals.dejeuner || 0)}</span>
+              <span>d:${Math.round(day.totals.diner || 0)}</span>
+              <span>C:${Math.round(day.totals.collation || 0)}</span>
             </div>
           ` : `
             <div class="day-empty">----</div>
           `}
         </div>
-        ${day.entries.some(e => e.note) ? '<div class="day-note-indicator">📝</div>' : ''}
+        ${day.entries && day.entries.some(e => e.note) ? '<div class="day-note-indicator">📝</div>' : ''}
       </div>
     `;
   }
@@ -477,7 +497,11 @@ class JournalPage {
    * Navigation semaine précédente
    */
   previousWeek() {
-    this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
+    console.log('📅 Navigation semaine précédente');
+    const newDate = new Date(this.currentWeekStart);
+    newDate.setDate(newDate.getDate() - 7);
+    this.setCurrentWeek(newDate);
+    
     this.loadWeekData().then(() => {
       this.updateWeekView();
     });
@@ -487,7 +511,11 @@ class JournalPage {
    * Navigation semaine suivante
    */
   nextWeek() {
-    this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
+    console.log('📅 Navigation semaine suivante');
+    const newDate = new Date(this.currentWeekStart);
+    newDate.setDate(newDate.getDate() + 7);
+    this.setCurrentWeek(newDate);
+    
     this.loadWeekData().then(() => {
       this.updateWeekView();
     });
@@ -497,9 +525,10 @@ class JournalPage {
    * Met à jour la vue semaine
    */
   updateWeekView() {
-    const pageEl = document.querySelector('.journal-page');
-    if (pageEl) {
-      pageEl.innerHTML = this.render();
+    // Re-render toute la page
+    const container = document.getElementById('content');
+    if (container && window.app?.router?.currentPageInstance === this) {
+      container.innerHTML = this.render();
       this.attachEvents();
     }
   }
@@ -508,12 +537,16 @@ class JournalPage {
    * Ouvre la modal détail du jour
    */
   async openDayModal(date) {
+    console.log('📅 Ouverture modal pour:', date);
     this.selectedDay = date;
     const modal = document.getElementById('dayModal');
     const title = document.getElementById('dayModalTitle');
     const content = document.getElementById('dayModalContent');
     
-    if (!modal || !title || !content) return;
+    if (!modal || !title || !content) {
+      console.error('❌ Éléments modal non trouvés');
+      return;
+    }
     
     // Trouve les données du jour
     const dayData = this.weekData.find(d => d.date === date);
@@ -1277,6 +1310,8 @@ class JournalPage {
   }
   
   getItemName(entry) {
+    if (!entry) return 'Inconnu';
+    
     if (entry.type === 'manuel') {
       return entry.reference;
     }
@@ -1291,6 +1326,7 @@ class JournalPage {
   }
   
   getItemUnit(entry) {
+    if (!entry) return '';
     if (entry.type === 'manuel') return '';
     if (entry.type === 'recette') return 'portion';
     
@@ -1752,6 +1788,13 @@ const journalStyles = `
     cursor: pointer;
     text-decoration: underline;
   }
+  
+  .no-data {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--color-text-light);
+  }
 </style>
 `;
 
@@ -1768,10 +1811,3 @@ window.JournalPage = JournalPage;
 
 // Instance globale pour les événements onclick
 window.journalPage = null;
-
-// Créer l'instance quand la page est affichée
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.app) {
-    window.journalPage = new JournalPage(window.app);
-  }
-});
