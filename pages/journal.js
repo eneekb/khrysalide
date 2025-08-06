@@ -476,6 +476,9 @@ class JournalPage {
    * Attache les événements après le rendu
    */
   attachEvents() {
+    // Assure que l'instance globale est disponible pour les onclick
+    window.journalPage = this;
+    
     // Ferme les modals si on clique en dehors
     const modals = ['dayModal', 'addModal', 'manualModal', 'noteModal'];
     modals.forEach(modalId => {
@@ -525,10 +528,18 @@ class JournalPage {
    * Met à jour la vue semaine
    */
   updateWeekView() {
-    // Re-render toute la page
-    const container = document.getElementById('content');
-    if (container && window.app?.router?.currentPageInstance === this) {
-      container.innerHTML = this.render();
+    // Re-render toute la page comme le font les autres pages
+    const pageEl = document.querySelector('.journal-page');
+    if (pageEl) {
+      // Re-render juste le contenu de la page journal
+      pageEl.innerHTML = `
+        ${this.renderWeekHeader()}
+        ${this.renderWeekView()}
+        ${this.renderDayModal()}
+        ${this.renderAddModal()}
+        ${this.renderManualModal()}
+        ${this.renderNoteModal()}
+      `;
       this.attachEvents();
     }
   }
@@ -1808,6 +1819,3 @@ if (!document.getElementById('journal-styles')) {
 
 // Export pour l'utilisation globale
 window.JournalPage = JournalPage;
-
-// Instance globale pour les événements onclick
-window.journalPage = null;
