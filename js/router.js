@@ -1,7 +1,7 @@
 /**
  * router.js - Gestionnaire de navigation SPA pour Khrysalide
  * Gère les routes, l'historique et le chargement des pages
- * Version: 1.4.5
+ * Version: 1.3.2
  */
 
 class Router {
@@ -63,7 +63,7 @@ class Router {
    * Enregistre les pages par défaut
    */
   registerDefaultPages() {
-    // Pages avec leurs configurations
+    // Pages placeholder en attendant les vrais modules
     const defaultPages = [
       {
         name: 'dashboard',
@@ -235,12 +235,8 @@ class Router {
     // Met à jour le titre de la page
     document.title = `${page.title} - ${this.app.config.name}`;
     
-    // Utilise directement le container content
-    const pageContainer = document.getElementById('content');
-    if (!pageContainer) {
-      console.error('Container "content" non trouvé');
-      return;
-    }
+    // Prépare le container
+    const pageContainer = this.getPageContainer();
     
     // Affiche le loader
     this.showLoader(pageContainer);
@@ -254,12 +250,7 @@ class Router {
       if (page.component) {
         // Utilise le composant de page s'il existe
         const instance = new page.component(this.app);
-        this.currentPageInstance = instance;
-        
-        // Crée l'instance globale pour les événements onclick
-        window[`${pageName}Page`] = instance;
-        
-        // Initialise la page
+        this.currentPageInstance = instance; // Stocke l'instance
         if (instance.init) await instance.init();
         content = instance.render();
         
@@ -273,7 +264,6 @@ class Router {
       } else {
         // Sinon affiche un placeholder
         this.currentPageInstance = null;
-        window[`${pageName}Page`] = null;
         content = this.renderPlaceholder(page);
         pageContainer.innerHTML = content;
       }
@@ -301,6 +291,20 @@ class Router {
   }
 
   /**
+   * Récupère ou crée le container des pages
+   */
+  getPageContainer() {
+    let container = document.getElementById('page-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'page-container';
+      container.className = 'page-container';
+      this.container.insertBefore(container, this.navigation);
+    }
+    return container;
+  }
+
+  /**
    * Affiche le loader
    */
   showLoader(container) {
@@ -318,21 +322,19 @@ class Router {
    * Affiche une erreur
    */
   showError(message) {
-    const pageContainer = document.getElementById('content');
-    if (pageContainer) {
-      pageContainer.innerHTML = `
-        <div class="page">
-          <div class="empty-state">
-            <div class="empty-icon">❌</div>
-            <h2 class="empty-title">Oops !</h2>
-            <p class="empty-text">${message}</p>
-            <button class="btn btn-primary" onclick="app.router.navigateTo('dashboard')">
-              Retour à l'accueil
-            </button>
-          </div>
+    const pageContainer = this.getPageContainer();
+    pageContainer.innerHTML = `
+      <div class="page">
+        <div class="empty-state">
+          <div class="empty-icon">❌</div>
+          <h2 class="empty-title">Oops !</h2>
+          <p class="empty-text">${message}</p>
+          <button class="btn btn-primary" onclick="app.router.navigateTo('dashboard')">
+            Retour à l'accueil
+          </button>
         </div>
-      `;
-    }
+      </div>
+    `;
   }
 
   /**
@@ -371,7 +373,7 @@ class Router {
 // Styles additionnels pour le routeur
 const routerStyles = `
 <style>
-  #content {
+  .page-container {
     min-height: calc(100vh - 80px);
     padding-bottom: env(safe-area-inset-bottom);
     animation: fadeIn 0.3s ease-out;
