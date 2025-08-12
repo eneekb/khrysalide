@@ -99,8 +99,16 @@ class JournalPage {
       const weekEnd = new Date(this.currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
       
-      const startISO = this.currentWeekStart.toISOString().split('T')[0];
-      const endISO = weekEnd.toISOString().split('T')[0];
+      // Format les dates correctement sans timezone
+      const startYear = this.currentWeekStart.getFullYear();
+      const startMonth = String(this.currentWeekStart.getMonth() + 1).padStart(2, '0');
+      const startDay = String(this.currentWeekStart.getDate()).padStart(2, '0');
+      const startISO = `${startYear}-${startMonth}-${startDay}`;
+      
+      const endYear = weekEnd.getFullYear();
+      const endMonth = String(weekEnd.getMonth() + 1).padStart(2, '0');
+      const endDay = String(weekEnd.getDate()).padStart(2, '0');
+      const endISO = `${endYear}-${endMonth}-${endDay}`;
       
       console.log(`📅 Chargement semaine: ${startISO} → ${endISO}`);
       
@@ -114,7 +122,8 @@ class JournalPage {
       
     } catch (error) {
       console.error('Erreur lors du chargement de la semaine:', error);
-      this.weekData = [];
+      // Initialise avec des données vides pour éviter les erreurs
+      this.weekData = this.organizeWeekData([]);
     }
   }
 
@@ -122,15 +131,20 @@ class JournalPage {
    * Organise les entrées par jour et par repas
    */
   organizeWeekData(entries) {
+    console.log('📊 Organisation des données, entrées:', entries);
     const weekData = [];
     
     // Crée un objet pour chaque jour de la semaine
     for (let i = 0; i < 7; i++) {
       const date = new Date(this.currentWeekStart);
       date.setDate(date.getDate() + i);
-      const dateISO = date.toISOString().split('T')[0];
+      // S'assure d'avoir la bonne date sans décalage timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateISO = `${year}-${month}-${day}`;
       
-      weekData.push({
+      const dayData = {
         date: dateISO,
         dayName: this.getDayName(date),
         dayNumber: date.getDate(),
@@ -142,33 +156,38 @@ class JournalPage {
           diner: 0,
           collation: 0
         }
-      });
-    }
-    
-    // Calcule les totaux par repas
-    weekData.forEach(day => {
-      day.entries.forEach(entry => {
-        day.totals.total += entry.kcal || 0;
+      };
+      
+      // Calcule les totaux pour ce jour
+      dayData.entries.forEach(entry => {
+        const kcal = entry.kcal || 0;
+        dayData.totals.total += kcal;
         
-        const repasLower = entry.repas?.toLowerCase() || '';
+        const repasLower = (entry.repas || '').toLowerCase();
         switch(repasLower) {
           case 'petit-déjeuner':
           case 'petit déjeuner':
-            day.totals.petitDejeuner += entry.kcal || 0;
+            dayData.totals.petitDejeuner += kcal;
             break;
           case 'déjeuner':
-            day.totals.dejeuner += entry.kcal || 0;
+            dayData.totals.dejeuner += kcal;
             break;
           case 'dîner':
           case 'diner':
-            day.totals.diner += entry.kcal || 0;
+            dayData.totals.diner += kcal;
             break;
           case 'collation':
-            day.totals.collation += entry.kcal || 0;
+            dayData.totals.collation += kcal;
             break;
         }
       });
-    });
+      
+      if (dayData.entries.length > 0) {
+        console.log(`📅 ${dateISO}: ${dayData.entries.length} entrées, ${dayData.totals.total} kcal`);
+      }
+      
+      weekData.push(dayData);
+    }
     
     return weekData;
   }
@@ -561,10 +580,14 @@ class JournalPage {
     
     // Trouve les données du jour
     const dayData = this.weekData.find(d => d.date === date);
-    if (!dayData) return;
+    if (!dayData) {
+      console.error('❌ Pas de données pour la date:', date);
+      return;
+    }
     
-    // Formatage de la date
-    const dateObj = new Date(date + 'T12:00:00');
+    // Formatage de la date sans problème de timezone
+    const [year, month, day] = date.split('-');
+    const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     const dateFormatted = dateObj.toLocaleDateString('fr-FR', { 
       weekday: 'long', 
       day: 'numeric', 
@@ -584,13 +607,15 @@ class JournalPage {
     
     // Organise les entrées
     dayData.entries.forEach(entry => {
-      const mealKey = entry.repas.toLowerCase().replace(' ', '-');
+      const repasLower = (entry.repas || '').toLowerCase();
+      const mealKey = repasLower.replace(' ', '-');
+      
       if (mealGroups[mealKey]) {
         mealGroups[mealKey].entries.push(entry);
-        mealGroups[mealKey].total += entry.kcal;
-      } else if (mealKey === 'diner') {
+        mealGroups[mealKey].total += entry.kcal || 0;
+      } else if (repasLower === 'diner') {
         mealGroups['dîner'].entries.push(entry);
-        mealGroups['dîner'].total += entry.kcal;
+        mealGroups['dîner'].total += entry.kcal || 0;
       }
     });
     
@@ -765,7 +790,9 @@ class JournalPage {
       'collation': 'collations'
     };
     
-    const dateObj = new Date(date + 'T12:00:00');
+    // Format la date correctement
+    const [year, month, day] = date.split('-');
+    const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     const dateFormatted = dateObj.toLocaleDateString('fr-FR', { 
       day: 'numeric', 
       month: 'long' 
@@ -776,7 +803,8 @@ class JournalPage {
     // Réinitialise la recherche
     this.searchQuery = '';
     this.searchFilter = 'all';
-    document.getElementById('searchInput').value = '';
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
     this.updateSearchResults();
     
     // Cache la sélection de quantité
@@ -1060,15 +1088,17 @@ class JournalPage {
       calories = (this.selectedItem.kcal100g / 100) * quantityInGrams;
     }
     
-    // Prépare l'entrée
+    // Prépare l'entrée - La date sera convertie en format français dans sheets-api.js
     const entry = {
-      date: this.selectedDay,
+      date: this.selectedDay,  // Format ISO YYYY-MM-DD
       repas: this.getMealName(this.selectedMeal),
-      type: this.selectedItem.type,
+      type: this.selectedItem.type === 'recette' ? 'recette' : 'ingredient',
       reference: this.selectedItem.type === 'recette' ? this.selectedItem.numero : this.selectedItem.reference,
       quantite: quantity,
       kcal: Math.round(calories)
     };
+    
+    console.log('📝 Ajout de l\'entrée:', entry);
     
     try {
       // Ajoute au journal
